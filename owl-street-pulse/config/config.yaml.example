@@ -1,0 +1,94 @@
+# Owl Street Pulse Alert System Configuration Template
+
+# Alpaca API Credentials and Endpoints
+alpaca:
+  # Use environment variables ${ALPACA_API_KEY} and ${ALPACA_API_SECRET} in production.
+  # The YAML parser will automatically expand them.
+  api_key: "${ALPACA_API_KEY}"
+  api_secret: "${ALPACA_API_SECRET}"
+  # Default paper API endpoint. For live trading, use: https://api.alpaca.markets
+  base_url: "https://paper-api.alpaca.markets"
+  # Alpaca Market Data endpoint
+  data_base_url: "https://data.alpaca.markets"
+
+# Polling Interval: run rules evaluation every N seconds in daemon mode
+poll_interval_seconds: 60
+
+# Pluggable Alert Channels
+notifiers:
+  console:
+    enabled: true
+  discord:
+    enabled: false
+    webhook_url: "${DISCORD_WEBHOOK_URL}"
+  slack:
+    enabled: false
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+  telegram:
+    enabled: false
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_CHAT_ID}"
+
+# List of assets to monitor
+monitors:
+  - symbol: AAPL
+    asset_class: stock # stock or crypto
+    rules:
+      - id: aapl_rsi_oversold
+        name: "AAPL RSI Oversold (15m)"
+        timeframe: "15Min" # Options: 1Min, 5Min, 15Min, 1Hour, 1Day
+        indicator: RSI
+        params:
+          period: 14
+        condition:
+          operator: "less_than"
+          value: 30.0
+        cooldown_seconds: 3600 # 1 hour cooldown
+
+      - id: aapl_rsi_overbought
+        name: "AAPL RSI Overbought (15m)"
+        timeframe: "15Min"
+        indicator: RSI
+        params:
+          period: 14
+        condition:
+          operator: "greater_than"
+          value: 70.0
+        cooldown_seconds: 3600
+
+      - id: aapl_golden_cross
+        name: "AAPL Golden Cross (Daily)"
+        timeframe: "1Day"
+        indicator: SMA_Cross
+        params:
+          fast_period: 50
+          slow_period: 200
+        condition:
+          operator: "cross_above"
+        cooldown_seconds: 86400 # 1 day cooldown
+
+  - symbol: BTC/USD
+    asset_class: crypto
+    rules:
+      - id: btc_rsi_oversold
+        name: "BTC RSI Oversold (1h)"
+        timeframe: "1Hour"
+        indicator: RSI
+        params:
+          period: 14
+        condition:
+          operator: "less_than"
+          value: 30.0
+        cooldown_seconds: 7200 # 2 hour cooldown
+
+      - id: btc_macd_bullish
+        name: "BTC MACD Bullish Cross"
+        timeframe: "1Hour"
+        indicator: MACD_Cross
+        params:
+          fast_period: 12
+          slow_period: 26
+          signal_period: 9
+        condition:
+          operator: "cross_above"
+        cooldown_seconds: 3600

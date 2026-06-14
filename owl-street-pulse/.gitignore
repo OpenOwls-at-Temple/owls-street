@@ -1,0 +1,21 @@
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+
+# Credentials
+.env
+config/config.yaml
+
+# Runtime Data and Logs
+data/
+logs/
+
+# IDE files
+.vscode/
+.idea/
+.DS_Store
