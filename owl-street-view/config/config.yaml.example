@@ -1,0 +1,15 @@
+alpaca:
+  api_key: "${ALPACA_API_KEY}"
+  api_secret: "${ALPACA_SECRET_KEY}"
+  mode: "${ALPACA_MODE}"
+
+fmp:
+  api_key: "${FMP_API_KEY}"
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+dashboard_password: "${DASHBOARD_PASSWORD}"
+pulse_url: "${PULSE_URL}"
+

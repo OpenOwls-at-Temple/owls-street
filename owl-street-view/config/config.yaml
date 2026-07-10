@@ -1,0 +1,15 @@
+alpaca:
+  api_key: PKPIXGCYS3NAGON7QG4PAS4ANY
+  api_secret: 91KLZuoES5YwTyrLTNL78tHsSLrXhihyoTZo4W6gXeJ1
+  mode: paper
+
+fmp:
+  api_key: "${FMP_API_KEY}"
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+# dashboard_password: "${DASHBOARD_PASSWORD}"
+pulse_url: "http://localhost:8001/"
+

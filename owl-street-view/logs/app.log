@@ -1,0 +1,205 @@
+2026-06-17 17:05:49 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:05:49 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:05:50 [ERROR] owl-street-view: Failed to start dashboard server: No module named 'src'
+2026-06-17 17:05:54 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:05:54 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:05:54 [ERROR] owl-street-view: Failed to start dashboard server: No module named 'alpaca.common'; 'alpaca' is not a package
+2026-06-17 17:06:07 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:06:07 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:06:07 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:06:07 [ERROR] src.web: Error loading configuration during startup: 3 validation errors for AppConfig
+alpaca.api_key
+  Value error, Credentials cannot be empty. Please check your config or environment variables. [type=value_error, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+alpaca.api_secret
+  Value error, Credentials cannot be empty. Please check your config or environment variables. [type=value_error, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+alpaca.mode
+  Value error, mode must be 'paper' or 'live' [type=value_error, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+Traceback (most recent call last):
+  File "/Users/arbaz/projects/owls-street/owl-street-view/src/web.py", line 73, in startup_event
+    config = load_config(config_path)
+  File "/Users/arbaz/projects/owls-street/owl-street-view/src/config.py", line 68, in load_config
+    return AppConfig.model_validate(yaml_data)
+  File "/Users/arbaz/projects/owls-street/owl-street-view/.venv/lib/python3.9/site-packages/pydantic/main.py", line 732, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+pydantic_core._pydantic_core.ValidationError: 3 validation errors for AppConfig
+alpaca.api_key
+  Value error, Credentials cannot be empty. Please check your config or environment variables. [type=value_error, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+alpaca.api_secret
+  Value error, Credentials cannot be empty. Please check your config or environment variables. [type=value_error, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+alpaca.mode
+  Value error, mode must be 'paper' or 'live' [type=value_error, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.13/v/value_error
+2026-06-17 17:12:01 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:12:01 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:12:01 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:12:01 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:12:01 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:13:20 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:13:20 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:13:21 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:13:21 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:13:21 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:19:26 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:19:26 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:19:26 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:19:26 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:19:26 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:20:11 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:20:11 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:20:11 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:20:11 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:20:11 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:21:08 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:21:08 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:21:08 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:21:08 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:21:08 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:21:32 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:21:32 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:21:32 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:21:32 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:21:32 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:27:19 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:27:19 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8081...
+2026-06-17 17:27:19 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:27:19 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:27:19 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:30:00 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:30:00 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8081...
+2026-06-17 17:30:01 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:30:01 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:30:01 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:33:11 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:33:11 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:33:12 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:33:12 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:33:12 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:35:34 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:35:34 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8081...
+2026-06-17 17:35:35 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:35:35 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:35:35 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:41:59 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:41:59 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-06-17 17:42:00 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:42:00 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:42:00 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:44:54 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 17:44:54 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8081...
+2026-06-17 17:44:55 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 17:44:55 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 17:44:55 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 17:45:18 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 17:45:22 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 17:45:32 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 18:46:54 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 18:46:54 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8081...
+2026-06-17 18:46:54 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 18:46:54 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 18:46:54 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 18:47:23 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 18:47:28 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 18:47:56 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 18:47:58 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:22:25 [INFO] owl-street-view: Initializing Owl Street View Trading Dashboard...
+2026-06-17 20:22:25 [INFO] owl-street-view: Starting dashboard server at http://0.0.0.0:8081...
+2026-06-17 20:22:26 [INFO] src.web: Serving frontend static build from: /Users/arbaz/projects/owls-street/owl-street-view/frontend/build
+2026-06-17 20:22:26 [INFO] src.web: AlpacaService initialized in web app.
+2026-06-17 20:22:26 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.
+2026-06-17 20:23:02 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:08 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:13 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:18 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:23 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:28 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:33 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:38 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:43 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:48 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:53 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:23:58 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:24:03 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:24:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:25:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:26:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:27:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:28:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:29:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:30:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:31:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:31:55 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:31:57 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:02 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:07 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:13 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:17 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:22 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:27 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:33 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:38 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:43 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:48 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:52 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:32:57 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:02 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:07 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:12 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:17 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:22 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:27 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:32 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:37 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:42 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:47 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:52 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:33:57 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:02 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:07 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:12 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:17 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:22 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:27 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:32 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:37 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:42 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:47 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:52 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:34:57 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:02 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:07 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:12 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:17 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:22 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:27 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:32 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:37 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:42 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:47 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:52 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:35:57 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:02 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:07 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:12 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:17 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:22 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:28 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:33 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:38 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:43 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:48 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:53 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:36:58 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:37:03 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:37:08 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:37:13 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:37:18 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:37:23 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:37:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:38:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:39:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-06-17 20:40:39 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"

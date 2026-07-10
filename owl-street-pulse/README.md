@@ -35,39 +35,23 @@ Designed to be hosted on private servers, it is lightweight, fully containerized
    cd owl-street-pulse
    ```
 
-2. **Initialize Virtual Environment**:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
+2. **Setup and Launch**:
+   The `run.sh` script handles everything for you. It automatically copies example configurations (`.env.example` -> `.env` and `config.yaml.example` -> `config.yaml`), ensures required directories (`data`, `logs`) exist, initializes a Python virtual environment, installs dependencies, and starts the system.
 
-3. **Install Dependencies**:
+   Simply run:
    ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
+   ./run.sh
    ```
+   This starts the Web UI dashboard server. Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
-4. **Configure Environments**:
-   Copy `.env.example` to `.env` and fill in your credentials:
-   ```bash
-   cp .env.example .env
-   ```
-
-5. **Configure Rules**:
-   Copy `config.yaml.example` to `config.yaml` and configure your watchlists and technical indicators:
-   ```bash
-   cp config/config.yaml.example config/config.yaml
-   ```
-
-6. **Run the Dashboard & Monitoring Engine**:
-   ```bash
-   python -m src.main --config config/config.yaml --db data/alerts.db
-   ```
-   This starts the Web UI dashboard server. Open **`http://localhost:8000`** in your browser.
-   
    *For one-off check cycles (e.g. to run as a cron job instead of hosting a persistent web dashboard), append the `--once` flag:*
    ```bash
-   python -m src.main --config config/config.yaml --db data/alerts.db --once
+   ./run.sh --once
+   ```
+
+   You can also customize parameters like the database path, config path, or port by passing them to the launcher:
+   ```bash
+   ./run.sh --port 8001 --db data/prod_alerts.db
    ```
 
 ---
