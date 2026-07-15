@@ -1,0 +1,9 @@
+node_dist/
+*.log
+.venv/
+__pycache__/
+.pytest_cache/
+.DS_Store
+owl-street-view/logs/
+owl-street-view/frontend/build/
+owl-street-view/frontend/node_modules/

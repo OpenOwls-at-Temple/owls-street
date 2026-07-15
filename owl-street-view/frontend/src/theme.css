@@ -34,37 +34,37 @@
 
 /* Maintain light variables but style them with readable contrast or let users fallback safely */
 [data-theme='light'] {
-  --bg-app: #0b0f19;
-  --bg-surface: rgba(17, 24, 39, 0.7);
-  --bg-elevated: rgba(31, 41, 55, 0.8);
-  --bg-input: rgba(0, 0, 0, 0.3);
-  --bg-canvas: #0b0f19;
-  --bg-muted: rgba(17, 24, 39, 0.5);
-  --bg-success-soft: rgba(16, 185, 129, 0.1);
-  --bg-danger-soft: rgba(239, 68, 68, 0.1);
-  --border: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --accent: #6366f1;
-  --accent-strong: #8b5cf6;
+  --bg-app: #f5f6f9;
+  --bg-surface: rgba(255, 255, 255, 0.85);
+  --bg-elevated: rgba(255, 255, 255, 0.95);
+  --bg-input: rgba(0, 0, 0, 0.04);
+  --bg-canvas: #ffffff;
+  --bg-muted: rgba(243, 244, 246, 0.8);
+  --bg-success-soft: rgba(16, 185, 129, 0.08);
+  --bg-danger-soft: rgba(239, 68, 68, 0.08);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --accent: #4f46e5;
+  --accent-strong: #7c3aed;
   --accent-contrast: #ffffff;
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
   --warning-border: rgba(245, 158, 11, 0.3);
-  --warning-soft: rgba(245, 158, 11, 0.1);
-  --shadow-accent: rgba(99, 102, 241, 0.25);
-  --shadow-overlay: rgba(0, 0, 0, 0.75);
-  --shadow-context: rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.18);
-  --surface-grad-top: rgba(99, 102, 241, 0.08);
-  --surface-grad-bot: rgba(139, 92, 246, 0.02);
-  --app-grad-a: rgba(99, 102, 241, 0.16);
-  --app-grad-b: rgba(139, 92, 246, 0.08);
-  --grid-line: rgba(255, 255, 255, 0.03);
+  --warning-soft: rgba(245, 158, 11, 0.08);
+  --shadow-accent: rgba(99, 102, 241, 0.1);
+  --shadow-overlay: rgba(0, 0, 0, 0.15);
+  --shadow-context: rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.04);
+  --surface-grad-top: rgba(99, 102, 241, 0.02);
+  --surface-grad-bot: rgba(139, 92, 246, 0.01);
+  --app-grad-a: rgba(99, 102, 241, 0.04);
+  --app-grad-b: rgba(139, 92, 246, 0.02);
+  --grid-line: rgba(0, 0, 0, 0.025);
 }
 
 html,

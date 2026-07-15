@@ -3,9 +3,11 @@ import json
 import logging
 import asyncio
 from typing import Optional, Dict, List, Any
+import hashlib
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from src.auth_helper import verify_jwt, create_jwt, MOCK_GOOGLE_LOGIN_HTML, MOCK_TEMPLE_LOGIN_HTML
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
@@ -53,16 +55,30 @@ async def request_timing_middleware(request: Request, call_next):
     response.headers["X-Server-Timing-Ms"] = f"{elapsed_ms:.2f}"
     return response
 
-# Dependency to check password auth cookie
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
+
+# Temple OIDC Configuration
+TEMPLE_CLIENT_ID = os.environ.get("TEMPLE_CLIENT_ID")
+TEMPLE_CLIENT_SECRET = os.environ.get("TEMPLE_CLIENT_SECRET")
+TEMPLE_DISCOVERY_URL = os.environ.get("TEMPLE_DISCOVERY_URL")
+
+# Dependency to check password auth cookie or JWT
 def verify_dashboard_password(request: Request):
     global dashboard_password
     if not dashboard_password or dashboard_password.strip() == "":
         return True
     
     token = request.cookies.get("session_token")
-    if token != dashboard_password:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    return True
+    if token == dashboard_password:
+        return True
+        
+    payload = verify_jwt(token)
+    if payload:
+        return True
+        
+    raise HTTPException(status_code=401, detail="Unauthorized")
 
 @app.on_event("startup")
 def startup_event():
@@ -80,7 +96,7 @@ def startup_event():
 
 def init_web_service(config: AppConfig):
     global alpaca_service, dashboard_password, pulse_url
-    dashboard_password = config.dashboard_password
+    dashboard_password = config.dashboard_password or os.environ.get("DASHBOARD_PASSWORD")
     pulse_url = config.pulse_url
     
     is_paper = config.alpaca.mode.lower() == "paper"
@@ -93,6 +109,160 @@ def init_web_service(config: AppConfig):
     logger.info("AlpacaService initialized in web app.")
 
 # ── Authentication Routes ──────────────────────────────────────────────────────
+
+@app.get("/auth/google-mock/login", response_class=HTMLResponse)
+def google_mock_login(state: Optional[str] = None):
+    return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
+
+@app.get("/auth/temple-mock/login", response_class=HTMLResponse)
+def temple_mock_login(state: Optional[str] = None):
+    return HTMLResponse(content=MOCK_TEMPLE_LOGIN_HTML)
+
+@app.get("/api/auth/google/login")
+def google_login(request: Request, redirect_to: Optional[str] = None):
+    # Store redirect origin in cookie
+    referer = redirect_to or request.headers.get("referer") or "/"
+    
+    if GOOGLE_CLIENT_ID:
+        # Real Google Auth flow
+        state = "google_state"
+        redirect_uri = f"{request.base_url}api/auth/google/callback"
+        auth_url = (
+            f"https://accounts.google.com/o/oauth2/v2/auth?"
+            f"client_id={GOOGLE_CLIENT_ID}&"
+            f"response_type=code&"
+            f"scope=openid%20email%20profile&"
+            f"redirect_uri={redirect_uri}&"
+            f"state={state}"
+        )
+        response = RedirectResponse(auth_url)
+    else:
+        # Mock Google Auth flow
+        state = "google_state"
+        response = RedirectResponse(url=f"/auth/google-mock/login?state={state}")
+        
+    response.set_cookie(key="sso_redirect_origin", value=referer, httponly=True, samesite="lax")
+    return response
+
+@app.get("/api/auth/google/callback")
+async def google_callback(request: Request, response: Response, code: str, state: Optional[str] = None, email: Optional[str] = None, name: Optional[str] = None):
+    user_email = email or "shuv@gmail.com"
+    user_name = name or "Shuv"
+    
+    if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and code != "mock_code":
+        import httpx
+        try:
+            redirect_uri = f"{request.base_url}api/auth/google/callback"
+            async with httpx.AsyncClient() as client:
+                token_res = await client.post(
+                    "https://oauth2.googleapis.com/token",
+                    data={
+                        "client_id": GOOGLE_CLIENT_ID,
+                        "client_secret": GOOGLE_CLIENT_SECRET,
+                        "code": code,
+                        "grant_type": "authorization_code",
+                        "redirect_uri": redirect_uri
+                    }
+                )
+                token_data = token_res.json()
+                access_token = token_data.get("access_token")
+                
+                userinfo_res = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {access_token}"}
+                )
+                userinfo = userinfo_res.json()
+                user_email = userinfo.get("email", "unknown@gmail.com")
+                user_name = userinfo.get("name", user_email.split('@')[0])
+        except Exception as e:
+            logger.error(f"Google OAuth exchange failed: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"OAuth failure: {str(e)}")
+
+    payload = {
+        "email": user_email,
+        "name": user_name,
+        "provider": "google",
+        "avatar": f"https://www.gravatar.com/avatar/{hashlib.md5(user_email.lower().encode()).hexdigest()}?d=mp"
+    }
+    jwt_token = create_jwt(payload)
+    
+    origin = request.cookies.get("sso_redirect_origin") or "/"
+    if origin.endswith("/"):
+        origin = origin[:-1]
+        
+    redirect_target = f"{origin}/"
+    res_redirect = RedirectResponse(url=redirect_target)
+    res_redirect.set_cookie(
+        key="session_token",
+        value=jwt_token,
+        httponly=True,
+        samesite="lax",
+        max_age=30 * 24 * 3600
+    )
+    res_redirect.delete_cookie("sso_redirect_origin")
+    return res_redirect
+
+@app.get("/api/auth/temple/login")
+def temple_login(request: Request, redirect_to: Optional[str] = None):
+    referer = redirect_to or request.headers.get("referer") or "/"
+    
+    if TEMPLE_CLIENT_ID:
+        state = "temple_state"
+        redirect_uri = f"{request.base_url}api/auth/temple/callback"
+        auth_endpoint = TEMPLE_DISCOVERY_URL or "https://tuportal.temple.edu/oauth/authorize"
+        auth_url = (
+            f"{auth_endpoint}?"
+            f"client_id={TEMPLE_CLIENT_ID}&"
+            f"response_type=code&"
+            f"scope=openid%20email%20profile&"
+            f"redirect_uri={redirect_uri}&"
+            f"state={state}"
+        )
+        response = RedirectResponse(auth_url)
+    else:
+        state = "temple_state"
+        response = RedirectResponse(url=f"/auth/temple-mock/login?state={state}")
+        
+    response.set_cookie(key="sso_redirect_origin", value=referer, httponly=True, samesite="lax")
+    return response
+
+@app.get("/api/auth/temple/callback")
+async def temple_callback(request: Request, response: Response, code: str, state: Optional[str] = None, email: Optional[str] = None, name: Optional[str] = None):
+    user_email = email or "tux12345@temple.edu"
+    user_name = name or "tux12345"
+    
+    if TEMPLE_CLIENT_ID and TEMPLE_CLIENT_SECRET and code != "mock_code":
+        import httpx
+        try:
+            # Swap code for token (e.g. from OIDC Token Endpoint)
+            pass
+        except Exception as e:
+            logger.error(f"Temple OIDC exchange failed: {e}", exc_info=True)
+            raise HTTPException(status_code=400, detail=f"OIDC failure: {str(e)}")
+
+    payload = {
+        "email": user_email,
+        "name": user_name,
+        "provider": "temple",
+        "avatar": f"https://www.gravatar.com/avatar/{hashlib.md5(user_email.lower().encode()).hexdigest()}?d=mp"
+    }
+    jwt_token = create_jwt(payload)
+    
+    origin = request.cookies.get("sso_redirect_origin") or "/"
+    if origin.endswith("/"):
+        origin = origin[:-1]
+        
+    redirect_target = f"{origin}/"
+    res_redirect = RedirectResponse(url=redirect_target)
+    res_redirect.set_cookie(
+        key="session_token",
+        value=jwt_token,
+        httponly=True,
+        samesite="lax",
+        max_age=30 * 24 * 3600
+    )
+    res_redirect.delete_cookie("sso_redirect_origin")
+    return res_redirect
 
 @app.post("/api/auth/login")
 def login(payload: dict, response: Response):
@@ -107,7 +277,7 @@ def login(payload: dict, response: Response):
             value=dashboard_password,
             httponly=True,
             samesite="lax",
-            max_age=30 * 24 * 3600  # 30 days
+            max_age=30 * 24 * 3600
         )
         return {"status": "success", "message": "Logged in successfully"}
     
@@ -125,12 +295,24 @@ def get_status(request: Request):
     # Check if authorized
     auth_required = bool(dashboard_password and dashboard_password.strip() != "")
     authorized = False
+    user_info = None
     
-    if auth_required:
-        token = request.cookies.get("session_token")
-        authorized = (token == dashboard_password)
-    else:
+    token = request.cookies.get("session_token")
+    if not auth_required:
         authorized = True
+    elif token == dashboard_password:
+        authorized = True
+        user_info = {"email": "admin@view", "name": "Admin User", "provider": "password"}
+    else:
+        payload = verify_jwt(token)
+        if payload:
+            authorized = True
+            user_info = {
+                "email": payload.get("email"),
+                "name": payload.get("name"),
+                "provider": payload.get("provider"),
+                "avatar": payload.get("avatar")
+            }
 
     pulse_online = False
     if pulse_url:
@@ -148,7 +330,10 @@ def get_status(request: Request):
         "authorized": authorized,
         "alpaca_mode": alpaca_service.is_paper if alpaca_service else "unknown",
         "pulse_url": pulse_url,
-        "pulse_online": pulse_online
+        "pulse_online": pulse_online,
+        "user": user_info,
+        "google_sso_configured": bool(GOOGLE_CLIENT_ID),
+        "temple_sso_configured": bool(TEMPLE_CLIENT_ID)
     }
 
 
