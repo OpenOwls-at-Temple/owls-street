@@ -62,8 +62,13 @@ def test_auth_endpoints(tmp_path, mock_config_path):
     
     # Set password in environment for test
     with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "securepassword"}):
-        # 1. Access status without password -> Should fail 401
+        # 1. Access status without password -> Should succeed 200 but authorized is False
         response = client.get("/api/status")
+        assert response.status_code == 200
+        assert response.json()["authorized"] is False
+        
+        # Access protected config without password -> Should fail 401
+        response = client.get("/api/config")
         assert response.status_code == 401
         
         # 2. Login with wrong password -> Should fail 400
@@ -76,10 +81,11 @@ def test_auth_endpoints(tmp_path, mock_config_path):
         cookie_header = response.headers.get("set-cookie")
         assert "session_token=securepassword" in cookie_header
         
-        # 4. Access status with the cookie -> Should succeed 200
+        # 4. Access status with the cookie -> Should succeed 200 and authorized is True
         client.cookies.set("session_token", "securepassword")
         response = client.get("/api/status")
         assert response.status_code == 200
+        assert response.json()["authorized"] is True
         
         # 5. Logout -> Should clear cookie
         response = client.post("/api/auth/logout")
