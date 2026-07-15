@@ -7,6 +7,7 @@ import OrderPanel from './components/OrderPanel';
 import Orders from './components/Orders';
 import Screener from './components/Screener';
 import Lockscreen from './components/Lockscreen';
+import OwlSpeaksChat from './components/OwlSpeaksChat';
 import { DEFAULT_WATCHLIST_SYMBOLS } from './symbols';
 import { getAccount, getClock, getPositions } from './api';
 
@@ -108,6 +109,9 @@ export default function App() {
   const [authorized, setAuthorized] = useState(false);
   const [authEnabled, setAuthEnabled] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [templeEnabled, setTempleEnabled] = useState(false);
+  const [passwordEnabled, setPasswordEnabled] = useState(true);
   const [serverStatus, setServerStatus] = useState('disconnected'); // 'online' or 'disconnected'
   const [pulseUrl, setPulseUrl] = useState('http://localhost:8000');
   const [pulseOnline, setPulseOnline] = useState(false);
@@ -146,6 +150,9 @@ export default function App() {
         const data = await res.json();
         setAuthEnabled(data.auth_enabled);
         setAuthorized(data.authorized);
+        setGoogleEnabled(!!data.google_enabled);
+        setTempleEnabled(!!data.temple_enabled);
+        setPasswordEnabled(data.password_enabled !== false);
         setServerStatus('online');
         if (data.pulse_url) {
           setPulseUrl(data.pulse_url);
@@ -401,7 +408,14 @@ export default function App() {
   }
 
   if (authEnabled && !authorized) {
-    return <Lockscreen onUnlock={handleUnlock} />;
+    return (
+      <Lockscreen
+        onUnlock={handleUnlock}
+        googleEnabled={googleEnabled}
+        templeEnabled={templeEnabled}
+        passwordEnabled={passwordEnabled}
+      />
+    );
   }
 
   return (
@@ -677,6 +691,7 @@ export default function App() {
             </div>
           )}
         </div>
+        <OwlSpeaksChat symbols={DEFAULT_WATCHLIST_SYMBOLS} />
       </div>
     </div>
   );

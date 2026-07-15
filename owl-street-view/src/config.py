@@ -41,6 +41,20 @@ class AlpacaConfig(BaseModel):
 class FmpConfig(BaseModel):
     api_key: Optional[str] = Field(None, description="FMP API Key")
 
+class GoogleSsoConfig(BaseModel):
+    client_id: Optional[str] = Field(None, description="Google Client ID")
+    client_secret: Optional[str] = Field(None, description="Google Client Secret")
+    redirect_uri: Optional[str] = Field(None, description="Google Redirect URI")
+    allowed_emails: Optional[str] = Field(None, description="Allowed Emails List")
+
+class TempleSsoConfig(BaseModel):
+    client_id: Optional[str] = Field(None, description="Temple Client ID (e.g. 'mock' or real ID)")
+    client_secret: Optional[str] = Field(None, description="Temple Client Secret")
+    redirect_uri: Optional[str] = Field(None, description="Temple Redirect URI")
+    auth_url: str = Field("https://fim.temple.edu/idp/profile/oidc/authorize", description="Temple Auth URL")
+    token_url: str = Field("https://fim.temple.edu/idp/profile/oidc/token", description="Temple Token URL")
+    userinfo_url: str = Field("https://fim.temple.edu/idp/profile/oidc/userinfo", description="Temple Userinfo URL")
+
 class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8080
@@ -48,6 +62,8 @@ class ServerConfig(BaseModel):
 class AppConfig(BaseModel):
     alpaca: AlpacaConfig
     fmp: FmpConfig = Field(default_factory=FmpConfig)
+    google_sso: GoogleSsoConfig = Field(default_factory=GoogleSsoConfig)
+    temple_sso: TempleSsoConfig = Field(default_factory=TempleSsoConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
     dashboard_password: Optional[str] = None
     pulse_url: str = "http://localhost:8000"
@@ -83,7 +99,10 @@ def save_config(config: AppConfig, filepath: str):
     # Restore environmental variable placeholders for safety
     env_vars = [
         "ALPACA_API_KEY", "ALPACA_SECRET_KEY", 
-        "FMP_API_KEY", "DASHBOARD_PASSWORD", "PULSE_URL"
+        "FMP_API_KEY", "DASHBOARD_PASSWORD", "PULSE_URL",
+        "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ALLOWED_EMAILS",
+        "TEMPLE_CLIENT_ID", "TEMPLE_CLIENT_SECRET", "TEMPLE_REDIRECT_URI",
+        "TEMPLE_AUTH_URL", "TEMPLE_TOKEN_URL", "TEMPLE_USERINFO_URL"
     ]
 
     
