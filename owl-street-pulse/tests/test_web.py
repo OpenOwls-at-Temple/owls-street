@@ -62,8 +62,13 @@ def test_auth_endpoints(tmp_path, mock_config_path):
     
     # Set password in environment for test
     with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "securepassword"}):
-        # 1. Access status without password -> Should fail 401
+        # 1. Access status without password -> Should succeed 200 but authorized is False
         response = client.get("/api/status")
+        assert response.status_code == 200
+        assert response.json()["authorized"] is False
+        
+        # Access protected config without password -> Should fail 401
+        response = client.get("/api/config")
         assert response.status_code == 401
         
         # 2. Login with wrong password -> Should fail 400
@@ -76,10 +81,11 @@ def test_auth_endpoints(tmp_path, mock_config_path):
         cookie_header = response.headers.get("set-cookie")
         assert "session_token=securepassword" in cookie_header
         
-        # 4. Access status with the cookie -> Should succeed 200
+        # 4. Access status with the cookie -> Should succeed 200 and authorized is True
         client.cookies.set("session_token", "securepassword")
         response = client.get("/api/status")
         assert response.status_code == 200
+        assert response.json()["authorized"] is True
         
         # 5. Logout -> Should clear cookie
         response = client.post("/api/auth/logout")
@@ -125,29 +131,26 @@ def test_sso_endpoints(tmp_path, mock_config_path):
         response = client.get("/api/auth/google/login", follow_redirects=False)
         assert response.status_code == 307
         target_url = response.headers.get("location")
-        assert "mock-login" in target_url
+        assert "google-mock/login" in target_url
         
         # 3. Test Google Mock Callback (Correct Email)
-        client.cookies.set("oauth_state", "teststate")
-        response = client.get("/api/auth/google/mock-callback", params={"email": "test@gmail.com", "state": "teststate"}, follow_redirects=False)
+        response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
         assert response.status_code == 307
         cookie_header = response.headers.get("set-cookie")
         assert "session_token=" in cookie_header
         
         # 4. Test Google Mock Callback (Unauthorized Email)
-        client.cookies.set("oauth_state", "teststate2")
-        response = client.get("/api/auth/google/mock-callback", params={"email": "hacker@gmail.com", "state": "teststate2"})
+        response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "hacker@gmail.com"})
         assert response.status_code == 403
         
         # 5. Test Temple SSO Login Redirect (Mock mode)
         response = client.get("/api/auth/temple/login", follow_redirects=False)
         assert response.status_code == 307
         target_url = response.headers.get("location")
-        assert "mock-login" in target_url
+        assert "temple-mock/login" in target_url
         
         # 6. Test Temple Mock Callback
-        client.cookies.set("oauth_state", "teststate3")
-        response = client.get("/api/auth/temple/mock-callback", params={"username": "test@gmail.com", "state": "teststate3"}, follow_redirects=False)
+        response = client.get("/api/auth/temple/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
         assert response.status_code == 307
         cookie_header = response.headers.get("set-cookie")
         assert "session_token=" in cookie_header

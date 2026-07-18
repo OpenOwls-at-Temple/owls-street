@@ -17,7 +17,17 @@ const decodeJwt = (token) => {
   }
 };
 
-export default function Lockscreen({ onUnlock, googleEnabled, googleClientId, templeEnabled, microsoftEnabled, microsoftClientId, passwordEnabled = true }) {
+export default function Lockscreen({
+  onUnlock,
+  googleEnabled,
+  googleClientId,
+  templeEnabled,
+  microsoftEnabled,
+  microsoftClientId,
+  passwordEnabled = true,
+  theme,
+  onToggleTheme
+}) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -185,6 +195,23 @@ export default function Lockscreen({ onUnlock, googleEnabled, googleClientId, te
 
   return (
     <div style={styles.overlay}>
+      <button 
+        type="button" 
+        onClick={onToggleTheme} 
+        style={styles.themeToggle}
+        title="Toggle Theme"
+      >
+        {theme === 'dark' ? (
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+          </svg>
+        ) : (
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+          </svg>
+        )}
+      </button>
+
       <div style={styles.card}>
         <div style={styles.logoContainer}>
           <div style={styles.logoIcon}>
@@ -260,6 +287,8 @@ export default function Lockscreen({ onUnlock, googleEnabled, googleClientId, te
         )}
 
         {error && <p style={styles.error}>{error}</p>}
+
+        {/* SSO buttons are rendered dynamically above based on server-side enablement */}
       </div>
     </div>
   );
@@ -272,22 +301,41 @@ const styles = {
     left: 0,
     width: '100vw',
     height: '100vh',
-    background: '#0b0f19',
+    background: 'var(--bg-app)',
     zIndex: 9999,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  themeToggle: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border)',
+    color: 'var(--text-primary)',
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    zIndex: 10000,
+    boxShadow: 'var(--shadow-soft)',
+    outline: 'none',
+    transition: 'all 0.2s',
+  },
   card: {
-    background: 'rgba(17, 24, 39, 0.85)',
+    background: 'var(--bg-surface)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    border: '1px solid var(--border)',
     borderRadius: 20,
     width: 380,
     padding: '40px 30px',
     textAlign: 'center',
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+    boxShadow: 'var(--shadow-card)',
     display: 'flex',
     flexDirection: 'column',
     gap: 20,
@@ -312,12 +360,12 @@ const styles = {
     fontSize: 20,
     fontWeight: 700,
     letterSpacing: '-0.5px',
-    background: 'linear-gradient(135deg, #fff, #9ca3af)',
+    background: 'linear-gradient(135deg, var(--text-primary), var(--text-secondary))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   },
   subtitle: {
-    color: '#9ca3af',
+    color: 'var(--text-secondary)',
     fontSize: 14,
     margin: 0,
     lineHeight: '1.4',
@@ -329,11 +377,11 @@ const styles = {
   },
   input: {
     width: '100%',
-    background: 'rgba(0, 0, 0, 0.2)',
-    border: '1px solid rgba(255, 255, 255, 0.06)',
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border)',
     borderRadius: 10,
     padding: '12px 16px',
-    color: '#fff',
+    color: 'var(--text-primary)',
     fontSize: 14,
     outline: 'none',
     textAlign: 'center',
@@ -443,8 +491,76 @@ const styles = {
     justifyContent: 'center',
   },
   error: {
-    color: '#ef4444',
+    color: 'var(--danger)',
     fontSize: 13,
     margin: 0,
+  },
+  dividerContainer: {
+    margin: '16px 0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  dividerLine: {
+    flexGrow: 1,
+    height: 1,
+    background: 'var(--border)',
+  },
+  dividerText: {
+    fontSize: 11,
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  ssoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  googleButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 18px',
+    borderRadius: 12,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    border: '1px solid var(--border)',
+    background: 'var(--bg-elevated)',
+    color: 'var(--text-primary)',
+    boxShadow: 'var(--shadow-soft)',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
+  },
+  templeButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 18px',
+    borderRadius: 12,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    border: '1px solid transparent',
+    background: '#9e1b32',
+    color: '#fff',
+    boxShadow: '0 4px 12px rgba(158, 27, 50, 0.3)',
+    justifyContent: 'center',
+    transition: 'all 0.2s',
+  },
+  tBadge: {
+    background: '#fff',
+    color: '#9e1b32',
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 900,
+    fontSize: 12,
+    fontFamily: 'sans-serif',
   }
 };

@@ -83,22 +83,20 @@ def test_sso_redirects_and_mock(tmp_path, mock_config_path):
     # Google SSO Redirect
     response = client.get("/api/auth/google/login", follow_redirects=False)
     assert response.status_code == 307
-    assert "mock-login" in response.headers.get("location")
+    assert "/auth/google-mock/login" in response.headers.get("location")
     
     # Google mock login page render
-    response = client.get("/api/auth/google/mock-login", params={"state": "teststate"})
+    response = client.get("/auth/google-mock/login", params={"state": "teststate"})
     assert response.status_code == 200
-    assert "Google Sign In (Simulated)" in response.text
+    assert "Google Accounts (Demo)" in response.text
     
     # Google Mock Callback Success
-    client.cookies.set("oauth_state", "teststate")
-    response = client.get("/api/auth/google/mock-callback", params={"email": "test@gmail.com", "state": "teststate"}, follow_redirects=False)
+    response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
     assert response.status_code == 307
     assert response.headers.get("location") == "/"
     
     # Google Mock Callback Forbidden
-    client.cookies.set("oauth_state", "teststate2")
-    response = client.get("/api/auth/google/mock-callback", params={"email": "hacker@gmail.com", "state": "teststate2"})
+    response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "hacker@gmail.com"})
     assert response.status_code == 403
     
     # Session authorization endpoint Google (Success)
@@ -113,7 +111,7 @@ def test_sso_redirects_and_mock(tmp_path, mock_config_path):
     # Microsoft SSO Redirect
     response = client.get("/api/auth/microsoft/login", follow_redirects=False)
     assert response.status_code == 307
-    assert "mock-login" in response.headers.get("location")
+    assert "microsoft/mock-login" in response.headers.get("location")
     
     # Microsoft mock login page render
     response = client.get("/api/auth/microsoft/mock-login", params={"state": "teststate_ms"})
@@ -122,23 +120,22 @@ def test_sso_redirects_and_mock(tmp_path, mock_config_path):
     
     # Microsoft Mock Callback Success
     client.cookies.set("oauth_state", "teststate_ms")
-    response = client.get("/api/auth/microsoft/mock-callback", params={"email": "test@gmail.com", "state": "teststate_ms"}, follow_redirects=False)
+    response = client.get("/api/auth/microsoft/callback", params={"code": "mock_code", "state": "teststate_ms", "email": "test@gmail.com"}, follow_redirects=False)
     assert response.status_code == 307
     assert response.headers.get("location") == "/"
     
     # Microsoft Mock Callback Forbidden
     client.cookies.set("oauth_state", "teststate_ms2")
-    response = client.get("/api/auth/microsoft/mock-callback", params={"email": "hacker@gmail.com", "state": "teststate_ms2"})
+    response = client.get("/api/auth/microsoft/callback", params={"code": "mock_code", "state": "teststate_ms2", "email": "hacker@gmail.com"})
     assert response.status_code == 403
 
     # Temple SSO Redirect
     response = client.get("/api/auth/temple/login", follow_redirects=False)
     assert response.status_code == 307
-    assert "mock-login" in response.headers.get("location")
+    assert "/auth/temple-mock/login" in response.headers.get("location")
     
     # Temple Mock Callback Success
-    client.cookies.set("oauth_state", "teststate3")
-    response = client.get("/api/auth/temple/mock-callback", params={"username": "test@gmail.com", "state": "teststate3"}, follow_redirects=False)
+    response = client.get("/api/auth/temple/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
     assert response.status_code == 307
     assert response.headers.get("location") == "/"
 

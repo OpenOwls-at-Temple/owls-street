@@ -115,6 +115,7 @@ export default function App() {
   const [microsoftEnabled, setMicrosoftEnabled] = useState(false);
   const [microsoftClientId, setMicrosoftClientId] = useState('');
   const [passwordEnabled, setPasswordEnabled] = useState(true);
+  const [user, setUser] = useState(null);
   const [serverStatus, setServerStatus] = useState('disconnected'); // 'online' or 'disconnected'
   const [pulseUrl, setPulseUrl] = useState('http://localhost:8000');
   const [pulseOnline, setPulseOnline] = useState(false);
@@ -160,6 +161,7 @@ export default function App() {
         setMicrosoftClientId(data.microsoft_client_id || '');
         setPasswordEnabled(data.password_enabled !== false);
         setServerStatus('online');
+        setUser(data.user);
         if (data.pulse_url) {
           setPulseUrl(data.pulse_url);
         }
@@ -187,6 +189,7 @@ export default function App() {
   const handleUnlock = () => {
     setAuthorized(true);
     setServerStatus('online');
+    checkAuthStatus();
     refresh();
   };
 
@@ -194,6 +197,7 @@ export default function App() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       setAuthorized(false);
+      setUser(null);
       checkAuthStatus();
     } catch (_) {}
   };
@@ -346,6 +350,14 @@ export default function App() {
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch (_) {}
+    
+    // Sync theme to the Pulse Alerts iframe if it is mounted
+    try {
+      const iframe = document.querySelector('iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'SET_THEME', theme }, '*');
+      }
+    } catch (_) {}
   }, [theme]);
 
   useEffect(() => {
@@ -423,6 +435,8 @@ export default function App() {
         microsoftEnabled={microsoftEnabled}
         microsoftClientId={microsoftClientId}
         passwordEnabled={passwordEnabled}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
     );
   }
@@ -466,7 +480,44 @@ export default function App() {
           })}
         </ul>
 
-        <div style={sidebarStyles.sidebarFooter}>
+        {authorized && user && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 0',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            marginTop: 'auto',
+            marginBottom: 10,
+            overflow: 'hidden',
+          }}>
+            <img 
+              src={user.avatar || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp'} 
+              style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }}
+              alt="avatar"
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', maxWidth: 120 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'User'}</span>
+              <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email || ''}</span>
+            </div>
+            {user.provider && (
+              <span style={{
+                marginLeft: 'auto',
+                fontSize: 8,
+                fontWeight: 700,
+                padding: '2px 4px',
+                borderRadius: 4,
+                textTransform: 'uppercase',
+                background: user.provider === 'google' ? 'rgba(66, 133, 244, 0.15)' : user.provider === 'temple' ? 'rgba(158, 27, 50, 0.15)' : 'rgba(255,255,255,0.05)',
+                color: user.provider === 'google' ? '#4285f4' : user.provider === 'temple' ? '#9e1b32' : '#9ca3af',
+              }}>
+                {user.provider}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div style={{ ...sidebarStyles.sidebarFooter, marginTop: (authorized && user) ? 0 : 'auto', borderTop: (authorized && user) ? 'none' : sidebarStyles.sidebarFooter.borderTop }}>
           <div style={sidebarStyles.statusBadge}>
             <span style={sidebarStyles.pulseDot(serverStatus === 'online')}></span>
             {serverStatus.toUpperCase()}
@@ -651,7 +702,7 @@ export default function App() {
               
               {pulseOnline ? (
                 <iframe
-                  src={pulseUrl}
+                  src={`${pulseUrl}${pulseUrl.includes('?') ? '&' : '?'}theme=${theme}`}
                   title="Owl Street Pulse Alerts System"
                   style={{ flex: 1, border: 'none', width: '100%', height: '100%', background: 'transparent' }}
                   sandbox="allow-same-origin allow-scripts allow-forms allow-downloads"
@@ -737,6 +788,9 @@ const sidebarStyles = {
     flexDirection: 'column',
     padding: 24,
     flexShrink: 0,
+    height: '100vh',
+    position: 'sticky',
+    top: 0,
   },
   logoContainer: {
     display: 'flex',
