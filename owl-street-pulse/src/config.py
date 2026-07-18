@@ -118,11 +118,20 @@ class MonitorConfig(BaseModel):
             raise ValueError(f"asset_class must be one of {allowed}")
         return v
 
+class GoogleSsoConfig(BaseModel):
+    client_id: Optional[str] = Field(None, description="Google Client ID")
+    client_secret: Optional[str] = Field(None, description="Google Client Secret")
+    redirect_uri: Optional[str] = Field(None, description="Google Redirect URI")
+    allowed_emails: Optional[str] = Field(None, description="Allowed Emails List")
+
+
 class AppConfig(BaseModel):
     alpaca: AlpacaConfig
     poll_interval_seconds: int = 60
     notifiers: NotifiersConfig = Field(default_factory=NotifiersConfig)
     monitors: List[MonitorConfig]
+    google_sso: GoogleSsoConfig = Field(default_factory=GoogleSsoConfig)
+
 
 def load_config(filepath: str) -> AppConfig:
     """Loads configuration file and applies environment variable expansions."""
@@ -148,7 +157,8 @@ def save_config(config: AppConfig, filepath: str):
     env_vars = [
         "ALPACA_API_KEY", "ALPACA_API_SECRET", 
         "DISCORD_WEBHOOK_URL", "SLACK_WEBHOOK_URL", 
-        "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"
+        "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID",
+        "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ALLOWED_EMAILS"
     ]
     
     def restore_placeholders(d: Any):

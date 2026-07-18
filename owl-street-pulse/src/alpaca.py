@@ -167,3 +167,40 @@ class AlpacaClient:
             result[sym] = df
 
         return result
+
+    def get_snapshot(self, symbol: str, asset_class: str = "stock") -> Optional[Dict[str, Any]]:
+        """Fetches the latest snapshot (latest trade, quote, and daily bar) for a symbol."""
+        sym = symbol.strip().upper()
+        if asset_class.lower() == "stock":
+            url = f"{self.data_base_url}/v2/stocks/{sym}/snapshot"
+            params = {"feed": "iex"}
+        elif asset_class.lower() == "crypto":
+            url = f"{self.data_base_url}/v1beta3/crypto/us/snapshots"
+            params = {"symbols": sym}
+        else:
+            return None
+
+        try:
+            data = self._request_with_retry(url, params)
+            if asset_class.lower() == "crypto":
+                return data.get("snapshots", {}).get(sym)
+            return data
+        except Exception as e:
+            logger.error(f"Error fetching snapshot for {sym}: {e}")
+            return None
+
+    def get_news(self, symbol: str, limit: int = 3) -> List[Dict[str, Any]]:
+        """Fetches the latest news articles for a symbol."""
+        sym = symbol.strip().upper()
+        url = f"{self.data_base_url}/v1beta1/news"
+        params = {
+            "symbols": sym,
+            "limit": limit,
+            "sort": "desc"
+        }
+        try:
+            data = self._request_with_retry(url, params)
+            return data.get("news", [])
+        except Exception as e:
+            logger.error(f"Error fetching news for {sym}: {e}")
+            return []
