@@ -91,6 +91,53 @@ def test_auth_endpoints(tmp_path, mock_config_path):
         response = client.post("/api/auth/logout")
         assert response.status_code == 200
 
+def test_sso_endpoints(tmp_path, mock_config_path):
+    # Set paths
+    src.web.CONFIG_PATH = mock_config_path
+    src.web.DB_PATH = str(tmp_path / "alerts.db")
+    
+    # Configure mock client IDs
+    import yaml
+    with open(mock_config_path, "r") as f:
+        cfg = yaml.safe_load(f)
+    cfg["google_sso"] = {
+        "client_id": "mock",
+        "client_secret": "secret",
+        "redirect_uri": "",
+        "allowed_emails": "test@gmail.com"
+    }
+
+    with open(mock_config_path, "w") as f:
+        yaml.safe_dump(cfg, f)
+        
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": ""}):
+        # 1. Check auth config endpoint
+        response = client.get("/api/auth/config")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["auth_enabled"] is True
+        assert data["google_enabled"] is True
+        assert data["password_enabled"] is False
+        
+        # 2. Test Google SSO Login Redirect (Mock mode)
+        response = client.get("/api/auth/google/login", follow_redirects=False)
+        assert response.status_code == 307
+        target_url = response.headers.get("location")
+        assert "google-mock/login" in target_url
+        
+        # 3. Test Google Mock Callback (Correct Email)
+        response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
+        assert response.status_code == 307
+        cookie_header = response.headers.get("set-cookie")
+        assert "session_token=" in cookie_header
+        
+        # 4. Test Google Mock Callback (Unauthorized Email)
+        response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "hacker@gmail.com"})
+        assert response.status_code == 403
+        
+
+
+
 def test_config_endpoints(tmp_path, mock_config_path):
     # Set paths
     src.web.CONFIG_PATH = mock_config_path
