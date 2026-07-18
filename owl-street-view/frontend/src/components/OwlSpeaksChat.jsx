@@ -10,7 +10,8 @@ export default function OwlSpeaksChat({ symbols = [] }) {
   const [attachedImages, setAttachedImages] = useState([]); // Base64 data URIs
   const [isLoading, setIsLoading] = useState(false);
 
-  // Draggable window state
+  // Draggable and Resizable window state
+  const [isExpanded, setIsExpanded] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
@@ -44,12 +45,14 @@ export default function OwlSpeaksChat({ symbols = [] }) {
       // Constrain within viewport with a 10px margin
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const leftEdge = vw - 24 - 440;
-      const topEdge = vh - 96 - 580;
+      const chatWidth = isExpanded ? 750 : 440;
+      const chatHeight = isExpanded ? 700 : 580;
+      const leftEdge = vw - 24 - chatWidth;
+      const topEdge = vh - 96 - chatHeight;
       const margin = 10;
       
-      const constrainedX = Math.max(-(leftEdge - margin), Math.min(vw - leftEdge - 440 - margin, newX));
-      const constrainedY = Math.max(-(topEdge - margin), Math.min(vh - topEdge - 580 - margin, newY));
+      const constrainedX = Math.max(-(leftEdge - margin), Math.min(vw - leftEdge - chatWidth - margin, newX));
+      const constrainedY = Math.max(-(topEdge - margin), Math.min(vh - topEdge - chatHeight - margin, newY));
 
       setPosition({ x: constrainedX, y: constrainedY });
     };
@@ -67,7 +70,28 @@ export default function OwlSpeaksChat({ symbols = [] }) {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [isDragging]);
+  }, [isDragging, isExpanded]);
+
+  // Keep window in bounds when size changes
+  useEffect(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const chatWidth = isExpanded ? 750 : 440;
+    const chatHeight = isExpanded ? 700 : 580;
+    const leftEdge = vw - 24 - chatWidth;
+    const topEdge = vh - 96 - chatHeight;
+    const margin = 10;
+
+    const minX = -(leftEdge - margin);
+    const maxX = vw - leftEdge - chatWidth - margin;
+    const minY = -(topEdge - margin);
+    const maxY = vh - topEdge - chatHeight - margin;
+
+    setPosition((prev) => ({
+      x: Math.max(minX, Math.min(maxX, prev.x)),
+      y: Math.max(minY, Math.min(maxY, prev.y))
+    }));
+  }, [isExpanded]);
 
   // localStorage thread model: { id, title, messages: [], symbol, timestamp }
   const [threads, setThreads] = useState(() => {
@@ -417,6 +441,8 @@ export default function OwlSpeaksChat({ symbols = [] }) {
         <div
           style={{
             ...styles.chatOverlay,
+            width: isExpanded ? 750 : 440,
+            height: isExpanded ? 700 : 580,
             transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
           }}
         >
@@ -463,6 +489,22 @@ export default function OwlSpeaksChat({ symbols = [] }) {
             <div style={styles.headerActions}>
               <button onClick={clearChatHistory} style={styles.clearBtn} title="Clear history">
                 Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                style={styles.expandToggleBtn}
+                title={isExpanded ? "Collapse window" : "Expand window"}
+              >
+                {isExpanded ? (
+                  <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 14, height: 14 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 9h6v6M9 15h6V9M15 15l-6-6M9 15l6-6" />
+                  </svg>
+                ) : (
+                  <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 14, height: 14 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h6.5m-6.5 0v6.5m0-6.5L10.5 10.5m9.75 9.75h-6.5m6.5 0v-6.5m0 6.5L13.5 13.5" />
+                  </svg>
+                )}
               </button>
               <button onClick={() => setIsOpen(false)} style={styles.closeBtn} title="Close">
                 &times;
@@ -712,6 +754,19 @@ const styles = {
     cursor: 'pointer',
     outline: 'none',
     lineHeight: '1',
+  },
+  expandToggleBtn: {
+    background: 'transparent',
+    color: '#9ca3af',
+    border: 'none',
+    cursor: 'pointer',
+    outline: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+    opacity: 0.8,
+    transition: 'opacity 0.2s',
   },
   historyDrawer: {
     position: 'absolute',

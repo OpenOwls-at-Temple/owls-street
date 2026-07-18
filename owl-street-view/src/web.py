@@ -3,7 +3,7 @@ import json
 import logging
 import asyncio
 from typing import Optional, Dict, List, Any
-from fastapi import FastAPI, Request, Response, HTTPException, Depends, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, Response, HTTPException, Depends, WebSocket, WebSocketDisconnect, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -66,9 +66,10 @@ def verify_dashboard_password(request: Request):
     # Check if authentication is enabled overall
     google_enabled = bool(app_config and app_config.google_sso and app_config.google_sso.client_id)
     temple_enabled = bool(app_config and app_config.temple_sso and app_config.temple_sso.client_id)
+    microsoft_enabled = bool(app_config and app_config.microsoft_sso and app_config.microsoft_sso.client_id)
     password_enabled = bool(dashboard_password and dashboard_password.strip() != "")
     
-    if not (password_enabled or google_enabled or temple_enabled):
+    if not (password_enabled or google_enabled or temple_enabled or microsoft_enabled):
         return True
         
     token = request.cookies.get("session_token")
@@ -120,9 +121,10 @@ def get_auth_config(request: Request):
     
     google_enabled = bool(app_config and app_config.google_sso and app_config.google_sso.client_id)
     temple_enabled = bool(app_config and app_config.temple_sso and app_config.temple_sso.client_id)
+    microsoft_enabled = bool(app_config and app_config.microsoft_sso and app_config.microsoft_sso.client_id)
     password_enabled = bool(dashboard_password and dashboard_password.strip() != "")
     
-    auth_enabled = password_enabled or google_enabled or temple_enabled
+    auth_enabled = password_enabled or google_enabled or temple_enabled or microsoft_enabled
     
     authorized = False
     if not auth_enabled:
@@ -140,7 +142,10 @@ def get_auth_config(request: Request):
         "authorized": authorized,
         "password_enabled": password_enabled,
         "google_enabled": google_enabled,
-        "temple_enabled": temple_enabled
+        "google_client_id": app_config.google_sso.client_id if (app_config and app_config.google_sso) else None,
+        "temple_enabled": temple_enabled,
+        "microsoft_enabled": microsoft_enabled,
+        "microsoft_client_id": app_config.microsoft_sso.client_id if (app_config and app_config.microsoft_sso) else None
     }
 
 @app.post("/api/auth/login")
@@ -166,6 +171,38 @@ def login(payload: dict, response: Response):
 def logout(response: Response):
     response.delete_cookie("session_token")
     return {"status": "success"}
+
+@app.post("/api/auth/session")
+def create_session(payload: dict, response: Response):
+    global app_config, active_sessions
+    email = payload.get("email")
+    provider = payload.get("provider")
+    if not email:
+        raise HTTPException(status_code=400, detail="Missing email address")
+        
+    allowed_emails_str = ""
+    if provider == "google" and app_config and app_config.google_sso:
+        allowed_emails_str = app_config.google_sso.allowed_emails or os.environ.get("ALLOWED_EMAILS", "")
+    elif provider == "microsoft" and app_config and app_config.microsoft_sso:
+        allowed_emails_str = app_config.microsoft_sso.allowed_emails or os.environ.get("ALLOWED_EMAILS", "")
+        
+    if allowed_emails_str:
+        allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
+        if email.lower() not in allowed_emails:
+            raise HTTPException(status_code=403, detail=f"Email {email} is not authorized to access this dashboard.")
+            
+    import secrets
+    session_token = secrets.token_hex(16)
+    active_sessions.add(session_token)
+    
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        samesite="lax",
+        max_age=30 * 24 * 3600
+    )
+    return {"status": "success", "message": "Session created successfully"}
 
 # ── Google SSO Endpoints ──
 
@@ -398,6 +435,267 @@ def google_mock_callback(request: Request, email: str, state: str):
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
         
     allowed_emails_str = app_config.google_sso.allowed_emails or os.environ.get("ALLOWED_EMAILS", "")
+    if allowed_emails_str:
+        allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
+        if email.lower() not in allowed_emails:
+            raise HTTPException(status_code=403, detail=f"Email {email} is not authorized to access this dashboard.")
+            
+    session_token = secrets.token_hex(16)
+    active_sessions.add(session_token)
+    
+    response = RedirectResponse(url="/")
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        samesite="lax",
+        max_age=30 * 24 * 3600
+    )
+    response.delete_cookie("oauth_state")
+    return response
+
+# ── Microsoft SSO Endpoints ──
+
+@app.get("/api/auth/microsoft/login")
+def microsoft_login(request: Request):
+    global app_config
+    if not app_config or not app_config.microsoft_sso or not app_config.microsoft_sso.client_id:
+        raise HTTPException(status_code=400, detail="Microsoft SSO is not configured on the server")
+        
+    state = secrets.token_hex(16)
+    
+    redirect_uri = app_config.microsoft_sso.redirect_uri
+    if not redirect_uri:
+        base_url = str(request.base_url).rstrip("/")
+        redirect_uri = f"{base_url}/api/auth/microsoft/callback"
+        
+    # Check for mock mode
+    if app_config.microsoft_sso.client_id == "mock":
+        base_url = str(request.base_url).rstrip("/")
+        url = f"{base_url}/api/auth/microsoft/mock-login?state={state}"
+        response = RedirectResponse(url)
+        response.set_cookie("oauth_state", state, httponly=True, max_age=600, samesite="lax")
+        return response
+        
+    params = {
+        "client_id": app_config.microsoft_sso.client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile User.Read",
+        "state": state,
+        "response_mode": "query"
+    }
+    url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?" + urllib.parse.urlencode(params)
+    
+    response = RedirectResponse(url)
+    response.set_cookie("oauth_state", state, httponly=True, max_age=600, samesite="lax")
+    return response
+
+@app.get("/api/auth/microsoft/callback")
+async def microsoft_callback(request: Request, code: Optional[str] = None, state: Optional[str] = None, error: Optional[str] = None):
+    global app_config, active_sessions
+    if error:
+        raise HTTPException(status_code=400, detail=f"Microsoft sign in failed: {error}")
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code is missing")
+        
+    # Verify state
+    cookie_state = request.cookies.get("oauth_state")
+    if not state or state != cookie_state:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+        
+    if not app_config or not app_config.microsoft_sso or not app_config.microsoft_sso.client_id:
+        raise HTTPException(status_code=400, detail="Microsoft SSO is not configured")
+        
+    redirect_uri = app_config.microsoft_sso.redirect_uri
+    if not redirect_uri:
+        base_url = str(request.base_url).rstrip("/")
+        redirect_uri = f"{base_url}/api/auth/microsoft/callback"
+        
+    # Exchange code for token
+    token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+    data = {
+        "code": code,
+        "client_id": app_config.microsoft_sso.client_id,
+        "client_secret": app_config.microsoft_sso.client_secret,
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            token_resp = await client.post(token_url, data=data)
+            if token_resp.status_code != 200:
+                logger.error(f"Failed to exchange Microsoft code: {token_resp.text}")
+                raise HTTPException(status_code=400, detail="Failed to retrieve token from Microsoft")
+            token_data = token_resp.json()
+            access_token = token_data.get("access_token")
+            
+            # Fetch user info from Microsoft Graph API
+            userinfo_url = "https://graph.microsoft.com/v1.0/me"
+            userinfo_resp = await client.get(userinfo_url, headers={"Authorization": f"Bearer {access_token}"})
+            if userinfo_resp.status_code != 200:
+                logger.error(f"Failed to fetch userinfo from Microsoft: {userinfo_resp.text}")
+                raise HTTPException(status_code=400, detail="Failed to retrieve user profile from Microsoft")
+            
+            user_data = userinfo_resp.json()
+            # Microsoft user profile usually contains 'mail' or 'userPrincipalName'
+            email = user_data.get("mail") or user_data.get("userPrincipalName")
+            if not email:
+                raise HTTPException(status_code=400, detail="No email address associated with the Microsoft account")
+                
+            # Verify if user email is allowed
+            allowed_emails_str = app_config.microsoft_sso.allowed_emails or os.environ.get("ALLOWED_EMAILS", "")
+            if allowed_emails_str:
+                allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
+                if email.lower() not in allowed_emails:
+                    raise HTTPException(status_code=403, detail=f"Email {email} is not authorized to access this dashboard.")
+            
+            # Login successful: create session
+            session_token = secrets.token_hex(16)
+            active_sessions.add(session_token)
+            
+            response = RedirectResponse(url="/")
+            response.set_cookie(
+                key="session_token",
+                value=session_token,
+                httponly=True,
+                samesite="lax",
+                max_age=30 * 24 * 3600
+            )
+            response.delete_cookie("oauth_state")
+            return response
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Microsoft auth error: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Internal authentication error: {str(e)}")
+
+@app.get("/api/auth/microsoft/mock-login", response_class=HTMLResponse)
+def microsoft_mock_login(request: Request, state: str):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Microsoft Sign In (Simulated)</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{
+                font-family: 'Segoe UI', -apple-system, system-ui, sans-serif;
+                background-color: #f2f2f2;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }}
+            .card {{
+                background: white;
+                padding: 44px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                width: 360px;
+            }}
+            .microsoft-logo {{
+                display: flex;
+                gap: 2px;
+                margin-bottom: 20px;
+            }}
+            .microsoft-logo-grid {{
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2px;
+                width: 22px;
+                height: 22px;
+            }}
+            .logo-box {{ width: 10px; height: 10px; }}
+            .box-1 {{ background-color: #f25022; }}
+            .box-2 {{ background-color: #7fba00; }}
+            .box-3 {{ background-color: #00a4ef; }}
+            .box-4 {{ background-color: #ffb900; }}
+            .microsoft-text {{
+                font-size: 16px;
+                font-weight: 600;
+                color: #737373;
+                align-self: center;
+                margin-left: 8px;
+            }}
+            h2 {{
+                color: #1b1b1b;
+                font-size: 24px;
+                margin-top: 0;
+                margin-bottom: 12px;
+                font-weight: 600;
+            }}
+            .form-group {{
+                margin-bottom: 20px;
+            }}
+            input {{
+                width: 100%;
+                padding: 8px 10px;
+                border: 1px solid #7f7f7f;
+                border-radius: 0px;
+                box-sizing: border-box;
+                font-size: 15px;
+                outline: none;
+            }}
+            input:focus {{
+                border-color: #0067b8;
+            }}
+            .buttons-container {{
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }}
+            button {{
+                background-color: #0067b8;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                font-size: 15px;
+                cursor: pointer;
+                min-width: 108px;
+            }}
+            button:hover {{
+                background-color: #005da6;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="microsoft-logo">
+                <div class="microsoft-logo-grid">
+                    <div class="logo-box box-1"></div>
+                    <div class="logo-box box-2"></div>
+                    <div class="logo-box box-3"></div>
+                    <div class="logo-box box-4"></div>
+                </div>
+                <div class="microsoft-text">Microsoft</div>
+            </div>
+            <h2>Sign in</h2>
+            <form action="/api/auth/microsoft/mock-callback" method="GET">
+                <input type="hidden" name="state" value="{state}">
+                <div class="form-group">
+                    <input type="email" id="email" name="email" required placeholder="someone@example.com" autofocus>
+                </div>
+                <div class="buttons-container">
+                    <button type="submit">Next</button>
+                </div>
+            </form>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+@app.get("/api/auth/microsoft/mock-callback")
+def microsoft_mock_callback(request: Request, email: str, state: str):
+    global app_config, active_sessions
+    cookie_state = request.cookies.get("oauth_state")
+    if not state or state != cookie_state:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+        
+    allowed_emails_str = app_config.microsoft_sso.allowed_emails or os.environ.get("ALLOWED_EMAILS", "")
     if allowed_emails_str:
         allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
         if email.lower() not in allowed_emails:
@@ -703,9 +1001,10 @@ def get_status(request: Request):
     # Check if authorized
     google_enabled = bool(app_config and app_config.google_sso and app_config.google_sso.client_id)
     temple_enabled = bool(app_config and app_config.temple_sso and app_config.temple_sso.client_id)
+    microsoft_enabled = bool(app_config and app_config.microsoft_sso and app_config.microsoft_sso.client_id)
     password_enabled = bool(dashboard_password and dashboard_password.strip() != "")
     
-    auth_required = password_enabled or google_enabled or temple_enabled
+    auth_required = password_enabled or google_enabled or temple_enabled or microsoft_enabled
     authorized = False
     
     if auth_required:
@@ -734,7 +1033,10 @@ def get_status(request: Request):
         "authorized": authorized,
         "password_enabled": password_enabled,
         "google_enabled": google_enabled,
+        "google_client_id": app_config.google_sso.client_id if (app_config and app_config.google_sso) else None,
         "temple_enabled": temple_enabled,
+        "microsoft_enabled": microsoft_enabled,
+        "microsoft_client_id": app_config.microsoft_sso.client_id if (app_config and app_config.microsoft_sso) else None,
         "alpaca_mode": alpaca_service.is_paper if alpaca_service else "unknown",
         "pulse_url": pulse_url,
         "pulse_online": pulse_online

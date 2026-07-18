@@ -160,7 +160,9 @@ class OwlSpeaksAgent:
         exclude_words = {
             "RSI", "MACD", "EMA", "SMA", "LLM", "AI", "OIDC", "SSO", "USD", "BTC", "ETH", "USDT",
             "BUY", "SELL", "CALL", "PUT", "NEWS", "RAG", "CHAT", "HELP", "INFO", "LONG", "HOLD",
-            "PORT", "HTML", "JSON", "API", "HTTP", "REST", "OAUT"
+            "PORT", "HTML", "JSON", "API", "HTTP", "REST", "OAUT", "VWAP", "VMAP", "AVWAP", "ATR",
+            "ADX", "OBV", "ROC", "SEC", "FED", "FOMC", "CPI", "GDP", "ETF", "USA", "STOCK", "SHARE",
+            "PRICE", "BANDS", "CHART"
         }
         
         for ticker in potential_tickers:
@@ -174,6 +176,9 @@ class OwlSpeaksAgent:
         for rag_sym, rag_asset in rag_symbols[:3]:
             snapshot = self.client.get_snapshot(rag_sym, rag_asset)
             news = self.client.get_news(rag_sym, limit=3)
+            
+            if not snapshot and not news:
+                continue
             
             block = []
             block.append(f"### Real-time Market Quote: {rag_sym}")
@@ -238,10 +243,18 @@ class OwlSpeaksAgent:
             "You provide objective, data-driven financial insights, technical analysis, and market interpretations.\n\n"
             "CRITICAL INSTRUCTIONS:\n"
             "1. Tone: Maintain a professional, clear, analytical, and objective tone. Do not make exaggerated claims.\n"
-            "2. Trading Setup: If technical indicator context is provided, start your response with a concise, bolded summary of the asset's current technical setup. Focus on indicators like RSI, EMA/SMA crossovers, MACD, and Bollinger Bands.\n"
-            "3. Advice/Analysis: Integrate the calculated indicator metrics and any recent alert logs directly into your logical deduction.\n"
+        )
+
+        if context_str:
+            system_prompt += (
+                "2. Trading Setup: Start your response with a concise, bolded summary of the asset's current technical setup based on the data provided below. Focus on indicators like RSI, EMA/SMA crossovers, MACD, and Bollinger Bands.\n"
+                "3. Advice/Analysis: Integrate the calculated indicator metrics and any recent alert logs directly into your logical deduction.\n"
+            )
+
+        system_prompt += (
             "4. Disclaimer: ALWAYS append a brief standard financial disclaimer at the end of your response, separated by a horizontal line (---). State clearly that your analysis is for educational purposes only and does not constitute official financial or investment advice.\n"
         )
+
         if context_str:
             system_prompt += f"\nHere is the real-time technical indicator context for the target asset:\n```markdown\n{context_str}\n```\n"
         if rag_context_str:
@@ -282,6 +295,14 @@ class OwlSpeaksAgent:
                     return response_json["response"]
                 else:
                     return "Error: Unexpected response format from Ollama."
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Ollama API error ({e.response.status_code}): {e.response.text}", exc_info=True)
+            try:
+                err_json = e.response.json()
+                detail = err_json.get("error", {}).get("message") or err_json.get("error") or e.response.text
+            except Exception:
+                detail = e.response.text
+            return f"⚠️ **Ollama API Error ({e.response.status_code})**: {detail}"
         except httpx.ConnectError:
             logger.error(f"Failed to connect to local Ollama instance at {OLLAMA_BASE_URL}")
             return (

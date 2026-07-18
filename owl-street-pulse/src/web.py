@@ -928,6 +928,7 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat", dependencies=[Depends(verify_dashboard_password)])
 async def chat_with_owl(payload: ChatRequest):
     """Sends a chat message to the local Owl Speaks agent and returns the response."""
+    logger.info(f"Received chat request: message_len={len(payload.message)}, symbol={payload.symbol}, history_len={len(payload.history) if payload.history else 0}, images={payload.images}")
     try:
         config = load_config(CONFIG_PATH)
         agent = OwlSpeaksAgent(config, db_path=DB_PATH)

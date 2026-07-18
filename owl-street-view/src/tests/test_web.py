@@ -37,6 +37,11 @@ temple_sso:
   auth_url: "https://fim.temple.edu/idp/profile/oidc/authorize"
   token_url: "https://fim.temple.edu/idp/profile/oidc/token"
   userinfo_url: "https://fim.temple.edu/idp/profile/oidc/userinfo"
+microsoft_sso:
+  client_id: "mock"
+  client_secret: "secret"
+  redirect_uri: ""
+  allowed_emails: "test@gmail.com"
 """
     cfg_file.write_text(cfg_content)
     return str(cfg_file)
@@ -55,6 +60,7 @@ def test_get_status_auth(tmp_path, mock_config_path):
     assert data["authorized"] is False
     assert data["google_enabled"] is True
     assert data["temple_enabled"] is True
+    assert data["microsoft_enabled"] is True
     assert data["password_enabled"] is True
 
     # 2. Login with correct password -> Should set cookie
@@ -66,6 +72,7 @@ def test_get_status_auth(tmp_path, mock_config_path):
     assert response.status_code == 200
     assert response.json()["google_enabled"] is True
     assert response.json()["temple_enabled"] is True
+    assert response.json()["microsoft_enabled"] is True
 
 def test_sso_redirects_and_mock(tmp_path, mock_config_path):
     # Setup mock config
@@ -94,6 +101,36 @@ def test_sso_redirects_and_mock(tmp_path, mock_config_path):
     response = client.get("/api/auth/google/mock-callback", params={"email": "hacker@gmail.com", "state": "teststate2"})
     assert response.status_code == 403
     
+    # Session authorization endpoint Google (Success)
+    response = client.post("/api/auth/session", json={"email": "test@gmail.com", "provider": "google"})
+    assert response.status_code == 200
+    assert response.json()["status"] == "success"
+    
+    # Session authorization endpoint Google (Forbidden)
+    response = client.post("/api/auth/session", json={"email": "hacker@gmail.com", "provider": "google"})
+    assert response.status_code == 403
+    
+    # Microsoft SSO Redirect
+    response = client.get("/api/auth/microsoft/login", follow_redirects=False)
+    assert response.status_code == 307
+    assert "mock-login" in response.headers.get("location")
+    
+    # Microsoft mock login page render
+    response = client.get("/api/auth/microsoft/mock-login", params={"state": "teststate_ms"})
+    assert response.status_code == 200
+    assert "Microsoft Sign In (Simulated)" in response.text
+    
+    # Microsoft Mock Callback Success
+    client.cookies.set("oauth_state", "teststate_ms")
+    response = client.get("/api/auth/microsoft/mock-callback", params={"email": "test@gmail.com", "state": "teststate_ms"}, follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers.get("location") == "/"
+    
+    # Microsoft Mock Callback Forbidden
+    client.cookies.set("oauth_state", "teststate_ms2")
+    response = client.get("/api/auth/microsoft/mock-callback", params={"email": "hacker@gmail.com", "state": "teststate_ms2"})
+    assert response.status_code == 403
+
     # Temple SSO Redirect
     response = client.get("/api/auth/temple/login", follow_redirects=False)
     assert response.status_code == 307
@@ -130,4 +167,7 @@ def test_chat_proxy(tmp_path, mock_config_path):
         args, kwargs = mock_post.call_args
         assert args[0] == "http://localhost:8001/api/chat"
         assert kwargs["cookies"]["session_token"] == "securepassword"
+
+
+
 

@@ -55,6 +55,12 @@ class TempleSsoConfig(BaseModel):
     token_url: str = Field("https://fim.temple.edu/idp/profile/oidc/token", description="Temple Token URL")
     userinfo_url: str = Field("https://fim.temple.edu/idp/profile/oidc/userinfo", description="Temple Userinfo URL")
 
+class MicrosoftSsoConfig(BaseModel):
+    client_id: Optional[str] = Field(None, description="Microsoft Client ID")
+    client_secret: Optional[str] = Field(None, description="Microsoft Client Secret")
+    redirect_uri: Optional[str] = Field(None, description="Microsoft Redirect URI")
+    allowed_emails: Optional[str] = Field(None, description="Allowed Emails List")
+
 class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8080
@@ -64,6 +70,7 @@ class AppConfig(BaseModel):
     fmp: FmpConfig = Field(default_factory=FmpConfig)
     google_sso: GoogleSsoConfig = Field(default_factory=GoogleSsoConfig)
     temple_sso: TempleSsoConfig = Field(default_factory=TempleSsoConfig)
+    microsoft_sso: MicrosoftSsoConfig = Field(default_factory=MicrosoftSsoConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
     dashboard_password: Optional[str] = None
     pulse_url: str = "http://localhost:8000"
@@ -102,7 +109,8 @@ def save_config(config: AppConfig, filepath: str):
         "FMP_API_KEY", "DASHBOARD_PASSWORD", "PULSE_URL",
         "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ALLOWED_EMAILS",
         "TEMPLE_CLIENT_ID", "TEMPLE_CLIENT_SECRET", "TEMPLE_REDIRECT_URI",
-        "TEMPLE_AUTH_URL", "TEMPLE_TOKEN_URL", "TEMPLE_USERINFO_URL"
+        "TEMPLE_AUTH_URL", "TEMPLE_TOKEN_URL", "TEMPLE_USERINFO_URL",
+        "MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET", "MICROSOFT_REDIRECT_URI"
     ]
 
     

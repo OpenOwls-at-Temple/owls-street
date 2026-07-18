@@ -110,7 +110,10 @@ export default function App() {
   const [authEnabled, setAuthEnabled] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState('');
   const [templeEnabled, setTempleEnabled] = useState(false);
+  const [microsoftEnabled, setMicrosoftEnabled] = useState(false);
+  const [microsoftClientId, setMicrosoftClientId] = useState('');
   const [passwordEnabled, setPasswordEnabled] = useState(true);
   const [serverStatus, setServerStatus] = useState('disconnected'); // 'online' or 'disconnected'
   const [pulseUrl, setPulseUrl] = useState('http://localhost:8000');
@@ -151,7 +154,10 @@ export default function App() {
         setAuthEnabled(data.auth_enabled);
         setAuthorized(data.authorized);
         setGoogleEnabled(!!data.google_enabled);
+        setGoogleClientId(data.google_client_id || '');
         setTempleEnabled(!!data.temple_enabled);
+        setMicrosoftEnabled(!!data.microsoft_enabled);
+        setMicrosoftClientId(data.microsoft_client_id || '');
         setPasswordEnabled(data.password_enabled !== false);
         setServerStatus('online');
         if (data.pulse_url) {
@@ -412,7 +418,10 @@ export default function App() {
       <Lockscreen
         onUnlock={handleUnlock}
         googleEnabled={googleEnabled}
+        googleClientId={googleClientId}
         templeEnabled={templeEnabled}
+        microsoftEnabled={microsoftEnabled}
+        microsoftClientId={microsoftClientId}
         passwordEnabled={passwordEnabled}
       />
     );
