@@ -9,6 +9,7 @@ Designed to be hosted on private servers, it is lightweight, fully containerized
 ## Key Features
 
 - **💻 Web UI Dashboard**: A gorgeous, secure Glassmorphism Single Page Application (built with Vanilla CSS/JS) to monitor system health, view historical trigger logs, manage rules dynamically, and dispatch test alerts.
+- **🦉 Owl Speaks AI Assistant**: An interactive chatbot integrated directly into the dashboard. Powered by a local Ollama model (e.g. `llama3.1`), it queries historical database logs and live market data/indicators to provide comprehensive analysis on monitored symbols.
 - **⚡ Efficient Batched Ingestion**: Groups symbols by timeframe and asset class, batching API calls to optimize network requests and bypass Alpaca API rate limits.
 - **📈 Built-in Indicators**: Includes highly optimized computations for SMA, EMA, RSI (Wilder's smoothing), MACD, and Bollinger Bands with vector-based crossovers (`cross_above`, `cross_below`).
 - **🛡️ Alert Deduplication**: Uses a local SQLite state database to guarantee that only **one alert is sent per candle bar** (even if the candle is open and updating) and respects configured cooldown periods.
@@ -153,6 +154,7 @@ pytest tests/ -v
 ### Repository Layout
 - `src/config.py`: Loads YAML and injects environment variables using Pydantic.
 - `src/alpaca.py`: Handle REST requests, pagination, and Alpaca data limitations.
+- `src/chat.py`: Implements the Ollama-based chat helper that compiles live indicator and database alert context.
 - `src/indicators.py`: Contains technical indicator formulas and crossover triggers.
 - `src/database.py`: Controls SQLite connection and deduplicates triggers.
 - `src/notifier.py`: Prepares payloads and requests webhook endpoints.

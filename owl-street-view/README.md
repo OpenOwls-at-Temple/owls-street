@@ -10,9 +10,10 @@ Serves both backend API endpoints and compiled static frontend assets from a sin
 - **Live Streaming Quotes**: Real-time pricing via Alpaca WebSockets.
 - **Advanced Charting**: Candlestick/line chart with volume overlays, drawings, and indicator tools powered by TradingView `lightweight-charts`.
 - **Options Chain Matrix**: Interactive options chain pairing calls/puts, displaying IV%, greeks, and last-trade prices.
-- **Data Screener**: Scan US equities using snapshots and FMP fundamental filters (market cap, P/E, EPS/revenue growth).
+- **Data Screener**: Scan US equities using snapshots and FMP fundamental filters (market cap, P/E, EPS/revenue growth). See [SCREENER.md](file:///Users/shuv/Projects/owls-street/owl-street-view/SCREENER.md) for full documentation.
 - **Order Panel & History**: Submit market, limit, stop, stop-limit, trailing stop, bracket (take profit & stop loss), OCO, and OTO orders.
 - **Auth Lockscreen Overlay**: Dashboard locking mechanism gated by a password.
+- **🦉 Owl Speaks AI Assistant**: Interactive chatbot component (`OwlSpeaksChat.jsx`) integrated directly into the dashboard that queries context from live prices and historical alert triggers (proxied to the Pulse backend LLM service).
 
 ---
 
@@ -63,11 +64,14 @@ owl-street-view/
 │   ├── build/               # Output directory for compiled React static assets
 │   ├── public/              # Public HTML templates
 │   └── src/                 # React codebases & components
+│       ├── components/      # UI Views (Chart, OptionChainMatrix, Screener, OwlSpeaksChat)
+│       └── theme.css        # Shared glassmorphic CSS theme tokens
 ├── src/                     # FastAPI Modular Python backend
 │   ├── main.py              # CLI bootstrap entry point
-│   ├── web.py               # REST API routers & WebSocket quotes streams
+│   ├── web.py               # REST API routers, WebSockets, & Chat Proxy
 │   ├── config.py            # Pydantic validation parsing
-│   └── alpaca_service.py    # Wrapper classes for Alpaca and FMP APIs
+│   └── alpaca_service.py    # Wrapper classes for Alpaca, FMP, & Screener APIs
+├── SCREENER.md              # Detailed Stock Screener documentation
 ├── requirements.txt
 └── .env.example
 ```
@@ -93,4 +97,5 @@ owl-street-view/
 | GET | `/api/option-expirations/{underlying}` | List active contract expirations |
 | GET | `/api/option-chain-matrix/{underlying}` | Fetchpaired call/put chain matrix |
 | POST | `/api/screener` | Run stock fundamentals screener |
+| POST | `/api/chat` | Proxies chat request to the Owl Street Pulse backend |
 | WS | `/ws/quotes` | Subcribe to real-time quotes WebSocket |
