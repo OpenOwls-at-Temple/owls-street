@@ -10,7 +10,7 @@ Serves both backend API endpoints and compiled static frontend assets from a sin
 - **Live Streaming Quotes**: Real-time pricing via Alpaca WebSockets.
 - **Advanced Charting**: Candlestick/line chart with volume overlays, drawings, and indicator tools powered by TradingView `lightweight-charts`.
 - **Options Chain Matrix**: Interactive options chain pairing calls/puts, displaying IV%, greeks, and last-trade prices.
-- **Data Screener**: Scan US equities using snapshots and FMP fundamental filters (market cap, P/E, EPS/revenue growth). See [SCREENER.md](file:///Users/shuv/Projects/owls-street/owl-street-view/SCREENER.md) for full documentation.
+- **Data Screener**: Scan US equities using snapshots and FMP fundamental filters (market cap, P/E, EPS/revenue growth). See [SCREENER.md](./SCREENER.md) for full documentation.
 - **Order Panel & History**: Submit market, limit, stop, stop-limit, trailing stop, bracket (take profit & stop loss), OCO, and OTO orders.
 - **Auth Lockscreen Overlay**: Dashboard locking mechanism gated by a password.
 - **🦉 Owl Speaks AI Assistant**: Interactive chatbot component (`OwlSpeaksChat.jsx`) integrated directly into the dashboard that queries context from live prices and historical alert triggers (proxied to the Pulse backend LLM service).

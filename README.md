@@ -4,8 +4,8 @@ Welcome to the **Owl Street** monorepo—a production-grade, self-hosted suite o
 
 The ecosystem is split into two primary backend-backed services and a modular React frontend dashboard:
 
-1. **[owl-street-pulse](file:///Users/shuv/Projects/owls-street/owl-street-pulse)** 🚨: An asset checking and real-time alert engine (FastAPI + SQLite + background worker) that dispatches notifications to Discord, Slack, Telegram, and System Console. It also hosts the central **Owl Speaks** Ollama-based chat agent.
-2. **[owl-street-view](file:///Users/shuv/Projects/owls-street/owl-street-view)** 💻: A high-fidelity trading dashboard consisting of a FastAPI proxy/API backend and a React single-page application.
+1. **[owl-street-pulse](./owl-street-pulse)** 🚨: An asset checking and real-time alert engine (FastAPI + SQLite + background worker) that dispatches notifications to Discord, Slack, Telegram, and System Console. It also hosts the central **Owl Speaks** Ollama-based chat agent.
+2. **[owl-street-view](./owl-street-view)** 💻: A high-fidelity trading dashboard consisting of a FastAPI proxy/API backend and a React single-page application.
 3. **Screener Component** 🔍: A premium stock screener integrated directly into the `owl-street-view` frontend and backend, merging Alpaca real-time market snapshots with fundamental ratios from Financial Modeling Prep (FMP).
 
 ---
@@ -95,7 +95,7 @@ Both applications use standalone helper scripts named `run.sh` to initialize the
 
 ### Step 1: Run the Alerting Engine (Pulse)
 
-Navigate to the [owl-street-pulse](file:///Users/shuv/Projects/owls-street/owl-street-pulse) directory:
+Navigate to the [owl-street-pulse](./owl-street-pulse) directory:
 ```bash
 cd owl-street-pulse
 ./run.sh
@@ -105,7 +105,7 @@ Open `.env` to customize your Alpaca credentials, Ollama configurations, and web
 
 ### Step 2: Run the Trading Dashboard & Screener (View)
 
-In a separate terminal tab, navigate to the [owl-street-view](file:///Users/shuv/Projects/owls-street/owl-street-view) directory:
+In a separate terminal tab, navigate to the [owl-street-view](./owl-street-view) directory:
 ```bash
 cd owl-street-view
 ./run.sh
@@ -121,6 +121,6 @@ Configure your `.env` in `owl-street-view` to specify target port and API config
 ## 📖 Component Documentation
 
 For details on configuration and running specific systems, please refer to their respective READMEs:
-- **Alert System Guide**: Refer to [owl-street-pulse/README.md](file:///Users/shuv/Projects/owls-street/owl-street-pulse/README.md)
-- **Dashboard Interface Guide**: Refer to [owl-street-view/README.md](file:///Users/shuv/Projects/owls-street/owl-street-view/README.md)
-- **Stock Screener Deep-Dive**: Refer to [owl-street-view/SCREENER.md](file:///Users/shuv/Projects/owls-street/owl-street-view/SCREENER.md)
+- **Alert System Guide**: Refer to [owl-street-pulse/README.md](./owl-street-pulse/README.md)
+- **Dashboard Interface Guide**: Refer to [owl-street-view/README.md](./owl-street-view/README.md)
+- **Stock Screener Deep-Dive**: Refer to [owl-street-view/SCREENER.md](./owl-street-view/SCREENER.md)

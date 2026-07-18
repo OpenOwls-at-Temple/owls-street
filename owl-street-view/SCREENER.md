@@ -1,6 +1,6 @@
 # Owl Street Stock Screener 🔍📊
 
-The **Stock Screener** is a high-performance filtering tool built into the [owl-street-view](file:///Users/shuv/Projects/owls-street/owl-street-view) dashboard. It allows you to filter and sort through thousands of US equities based on live technicals, daily pricing, volume snapshots, and institutional-grade company fundamentals.
+The **Stock Screener** is a high-performance filtering tool built into the [owl-street-view](../owl-street-view) dashboard. It allows you to filter and sort through thousands of US equities based on live technicals, daily pricing, volume snapshots, and institutional-grade company fundamentals.
 
 ---
 
