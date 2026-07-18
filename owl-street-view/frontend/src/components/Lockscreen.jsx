@@ -86,15 +86,7 @@ export default function Lockscreen({ onUnlock, theme, onToggleTheme }) {
             </svg>
             Google
           </button>
-          
-          <button 
-            type="button" 
-            onClick={() => window.location.href = '/api/auth/temple/login'} 
-            style={styles.templeButton}
-          >
-            <div style={styles.tBadge}>T</div>
-            Temple University
-          </button>
+
         </div>
       </div>
     </div>
@@ -253,33 +245,4 @@ const styles = {
     justifyContent: 'center',
     transition: 'all 0.2s',
   },
-  templeButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '10px 18px',
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    border: '1px solid transparent',
-    background: '#9e1b32',
-    color: '#fff',
-    boxShadow: '0 4px 12px rgba(158, 27, 50, 0.3)',
-    justifyContent: 'center',
-    transition: 'all 0.2s',
-  },
-  tBadge: {
-    background: '#fff',
-    color: '#9e1b32',
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 900,
-    fontSize: 12,
-    fontFamily: 'sans-serif',
-  }
 };

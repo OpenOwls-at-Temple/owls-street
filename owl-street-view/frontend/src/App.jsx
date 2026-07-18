@@ -483,8 +483,8 @@ export default function App() {
                 padding: '2px 4px',
                 borderRadius: 4,
                 textTransform: 'uppercase',
-                background: user.provider === 'google' ? 'rgba(66, 133, 244, 0.15)' : user.provider === 'temple' ? 'rgba(158, 27, 50, 0.15)' : 'rgba(255,255,255,0.05)',
-                color: user.provider === 'google' ? '#4285f4' : user.provider === 'temple' ? '#9e1b32' : '#9ca3af',
+                background: user.provider === 'google' ? 'rgba(66, 133, 244, 0.15)' : 'rgba(255,255,255,0.05)',
+                color: user.provider === 'google' ? '#4285f4' : '#9ca3af',
               }}>
                 {user.provider}
               </span>

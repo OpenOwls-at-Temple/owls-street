@@ -8,7 +8,7 @@ import hashlib
 from fastapi import FastAPI, Request, Response, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.auth_helper import verify_jwt, create_jwt, MOCK_GOOGLE_LOGIN_HTML, MOCK_TEMPLE_LOGIN_HTML
+from src.auth_helper import verify_jwt, create_jwt, MOCK_GOOGLE_LOGIN_HTML
 
 from src.config import load_config, save_config, AppConfig
 from src.engine import AlertEngine
@@ -99,10 +99,7 @@ app.add_middleware(
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-# Temple OIDC Configuration
-TEMPLE_CLIENT_ID = os.environ.get("TEMPLE_CLIENT_ID")
-TEMPLE_CLIENT_SECRET = os.environ.get("TEMPLE_CLIENT_SECRET")
-TEMPLE_DISCOVERY_URL = os.environ.get("TEMPLE_DISCOVERY_URL")
+
 
 # Authentication dependency
 def verify_dashboard_password(request: Request):
@@ -155,9 +152,7 @@ def get_dashboard():
 def google_mock_login(state: Optional[str] = None):
     return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
 
-@app.get("/auth/temple-mock/login", response_class=HTMLResponse)
-def temple_mock_login(state: Optional[str] = None):
-    return HTMLResponse(content=MOCK_TEMPLE_LOGIN_HTML)
+
 
 @app.get("/api/auth/google/login")
 def google_login(request: Request, redirect_to: Optional[str] = None):
@@ -243,67 +238,7 @@ async def google_callback(request: Request, response: Response, code: str, state
     res_redirect.delete_cookie("sso_redirect_origin")
     return res_redirect
 
-@app.get("/api/auth/temple/login")
-def temple_login(request: Request, redirect_to: Optional[str] = None):
-    referer = redirect_to or request.headers.get("referer") or "/"
-    
-    if TEMPLE_CLIENT_ID:
-        state = "temple_state"
-        redirect_uri = f"{request.base_url}api/auth/temple/callback"
-        auth_endpoint = TEMPLE_DISCOVERY_URL or "https://tuportal.temple.edu/oauth/authorize"
-        auth_url = (
-            f"{auth_endpoint}?"
-            f"client_id={TEMPLE_CLIENT_ID}&"
-            f"response_type=code&"
-            f"scope=openid%20email%20profile&"
-            f"redirect_uri={redirect_uri}&"
-            f"state={state}"
-        )
-        response = RedirectResponse(auth_url)
-    else:
-        state = "temple_state"
-        response = RedirectResponse(url=f"/auth/temple-mock/login?state={state}")
-        
-    response.set_cookie(key="sso_redirect_origin", value=referer, httponly=True, samesite="lax")
-    return response
 
-@app.get("/api/auth/temple/callback")
-async def temple_callback(request: Request, response: Response, code: str, state: Optional[str] = None, email: Optional[str] = None, name: Optional[str] = None):
-    user_email = email or "tux12345@temple.edu"
-    user_name = name or "tux12345"
-    
-    if TEMPLE_CLIENT_ID and TEMPLE_CLIENT_SECRET and code != "mock_code":
-        import httpx
-        try:
-            # Swap code for token (e.g. from OIDC Token Endpoint)
-            pass
-        except Exception as e:
-            logger.error(f"Temple OIDC exchange failed: {e}", exc_info=True)
-            raise HTTPException(status_code=400, detail=f"OIDC failure: {str(e)}")
-
-    payload = {
-        "email": user_email,
-        "name": user_name,
-        "provider": "temple",
-        "avatar": f"https://www.gravatar.com/avatar/{hashlib.md5(user_email.lower().encode()).hexdigest()}?d=mp"
-    }
-    jwt_token = create_jwt(payload)
-    
-    origin = request.cookies.get("sso_redirect_origin") or "/"
-    if origin.endswith("/"):
-        origin = origin[:-1]
-        
-    redirect_target = f"{origin}/"
-    res_redirect = RedirectResponse(url=redirect_target)
-    res_redirect.set_cookie(
-        key="session_token",
-        value=jwt_token,
-        httponly=True,
-        samesite="lax",
-        max_age=30 * 24 * 3600
-    )
-    res_redirect.delete_cookie("sso_redirect_origin")
-    return res_redirect
 
 @app.post("/api/auth/login")
 def login(payload: dict, response: Response):
@@ -385,8 +320,7 @@ def get_status(request: Request):
         "auth_enabled": auth_required,
         "authorized": authorized,
         "user": user_info,
-        "google_sso_configured": bool(GOOGLE_CLIENT_ID),
-        "temple_sso_configured": bool(TEMPLE_CLIENT_ID)
+        "google_sso_configured": bool(GOOGLE_CLIENT_ID)
     }
 
 @app.get("/api/config", dependencies=[Depends(verify_dashboard_password)])
