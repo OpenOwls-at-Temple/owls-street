@@ -19,12 +19,4 @@ google_sso:
   redirect_uri: "${GOOGLE_REDIRECT_URI}"
   allowed_emails: "${ALLOWED_EMAILS}"
 
-temple_sso:
-  client_id: "${TEMPLE_CLIENT_ID}"
-  client_secret: "${TEMPLE_CLIENT_SECRET}"
-  redirect_uri: "${TEMPLE_REDIRECT_URI}"
-  auth_url: "${TEMPLE_AUTH_URL}"
-  token_url: "${TEMPLE_TOKEN_URL}"
-  userinfo_url: "${TEMPLE_USERINFO_URL}"
-
 
