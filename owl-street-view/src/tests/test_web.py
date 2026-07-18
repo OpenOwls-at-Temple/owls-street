@@ -30,13 +30,7 @@ google_sso:
   client_secret: "secret"
   redirect_uri: ""
   allowed_emails: "test@gmail.com"
-temple_sso:
-  client_id: "mock"
-  client_secret: "secret"
-  redirect_uri: ""
-  auth_url: "https://fim.temple.edu/idp/profile/oidc/authorize"
-  token_url: "https://fim.temple.edu/idp/profile/oidc/token"
-  userinfo_url: "https://fim.temple.edu/idp/profile/oidc/userinfo"
+
 microsoft_sso:
   client_id: "mock"
   client_secret: "secret"
@@ -59,7 +53,6 @@ def test_get_status_auth(tmp_path, mock_config_path):
     assert data["auth_enabled"] is True
     assert data["authorized"] is False
     assert data["google_enabled"] is True
-    assert data["temple_enabled"] is True
     assert data["microsoft_enabled"] is True
     assert data["password_enabled"] is True
 
@@ -71,7 +64,6 @@ def test_get_status_auth(tmp_path, mock_config_path):
     response = client.get("/api/auth/config")
     assert response.status_code == 200
     assert response.json()["google_enabled"] is True
-    assert response.json()["temple_enabled"] is True
     assert response.json()["microsoft_enabled"] is True
 
 def test_sso_redirects_and_mock(tmp_path, mock_config_path):
@@ -129,15 +121,7 @@ def test_sso_redirects_and_mock(tmp_path, mock_config_path):
     response = client.get("/api/auth/microsoft/callback", params={"code": "mock_code", "state": "teststate_ms2", "email": "hacker@gmail.com"})
     assert response.status_code == 403
 
-    # Temple SSO Redirect
-    response = client.get("/api/auth/temple/login", follow_redirects=False)
-    assert response.status_code == 307
-    assert "/auth/temple-mock/login" in response.headers.get("location")
-    
-    # Temple Mock Callback Success
-    response = client.get("/api/auth/temple/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
-    assert response.status_code == 307
-    assert response.headers.get("location") == "/"
+
 
 def test_chat_proxy(tmp_path, mock_config_path):
     # Setup mock config

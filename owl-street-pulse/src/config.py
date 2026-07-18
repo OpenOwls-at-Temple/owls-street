@@ -124,13 +124,6 @@ class GoogleSsoConfig(BaseModel):
     redirect_uri: Optional[str] = Field(None, description="Google Redirect URI")
     allowed_emails: Optional[str] = Field(None, description="Allowed Emails List")
 
-class TempleSsoConfig(BaseModel):
-    client_id: Optional[str] = Field(None, description="Temple Client ID (e.g. 'mock' or real ID)")
-    client_secret: Optional[str] = Field(None, description="Temple Client Secret")
-    redirect_uri: Optional[str] = Field(None, description="Temple Redirect URI")
-    auth_url: str = Field("https://fim.temple.edu/idp/profile/oidc/authorize", description="Temple Auth URL")
-    token_url: str = Field("https://fim.temple.edu/idp/profile/oidc/token", description="Temple Token URL")
-    userinfo_url: str = Field("https://fim.temple.edu/idp/profile/oidc/userinfo", description="Temple Userinfo URL")
 
 class AppConfig(BaseModel):
     alpaca: AlpacaConfig
@@ -138,7 +131,7 @@ class AppConfig(BaseModel):
     notifiers: NotifiersConfig = Field(default_factory=NotifiersConfig)
     monitors: List[MonitorConfig]
     google_sso: GoogleSsoConfig = Field(default_factory=GoogleSsoConfig)
-    temple_sso: TempleSsoConfig = Field(default_factory=TempleSsoConfig)
+
 
 def load_config(filepath: str) -> AppConfig:
     """Loads configuration file and applies environment variable expansions."""
@@ -165,9 +158,7 @@ def save_config(config: AppConfig, filepath: str):
         "ALPACA_API_KEY", "ALPACA_API_SECRET", 
         "DISCORD_WEBHOOK_URL", "SLACK_WEBHOOK_URL", 
         "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID",
-        "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ALLOWED_EMAILS",
-        "TEMPLE_CLIENT_ID", "TEMPLE_CLIENT_SECRET", "TEMPLE_REDIRECT_URI",
-        "TEMPLE_AUTH_URL", "TEMPLE_TOKEN_URL", "TEMPLE_USERINFO_URL"
+        "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "ALLOWED_EMAILS"
     ]
     
     def restore_placeholders(d: Any):

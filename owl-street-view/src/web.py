@@ -7,7 +7,7 @@ import hashlib
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, WebSocket, WebSocketDisconnect, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from src.auth_helper import verify_jwt, create_jwt, MOCK_GOOGLE_LOGIN_HTML, MOCK_TEMPLE_LOGIN_HTML
+from src.auth_helper import verify_jwt, create_jwt, MOCK_GOOGLE_LOGIN_HTML
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError, BaseModel
 
@@ -65,32 +65,12 @@ async def request_timing_middleware(request: Request, call_next):
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-# Temple OIDC Configuration
-TEMPLE_CLIENT_ID = os.environ.get("TEMPLE_CLIENT_ID")
-TEMPLE_CLIENT_SECRET = os.environ.get("TEMPLE_CLIENT_SECRET")
-TEMPLE_DISCOVERY_URL = os.environ.get("TEMPLE_DISCOVERY_URL")
-
 def get_google_sso_credentials(config):
     client_id = (config.google_sso.client_id if (config and config.google_sso) else None) or os.environ.get("GOOGLE_CLIENT_ID")
     client_secret = (config.google_sso.client_secret if (config and config.google_sso) else None) or os.environ.get("GOOGLE_CLIENT_SECRET")
     redirect_uri = (config.google_sso.redirect_uri if (config and config.google_sso) else None) or os.environ.get("GOOGLE_REDIRECT_URI")
     allowed_emails = (config.google_sso.allowed_emails if (config and config.google_sso) else None) or os.environ.get("ALLOWED_EMAILS")
     return client_id, client_secret, redirect_uri, allowed_emails
-
-def get_temple_sso_credentials(config):
-    client_id = (config.temple_sso.client_id if (config and config.temple_sso) else None) or os.environ.get("TEMPLE_CLIENT_ID")
-    client_secret = (config.temple_sso.client_secret if (config and config.temple_sso) else None) or os.environ.get("TEMPLE_CLIENT_SECRET")
-    redirect_uri = (config.temple_sso.redirect_uri if (config and config.temple_sso) else None) or os.environ.get("TEMPLE_REDIRECT_URI")
-    
-    # Discovery / Auth URLs
-    auth_url = (config.temple_sso.auth_url if (config and config.temple_sso) else None) or os.environ.get("TEMPLE_AUTH_URL") or "https://tuportal.temple.edu/oauth/authorize"
-    token_url = (config.temple_sso.token_url if (config and config.temple_sso) else None) or os.environ.get("TEMPLE_TOKEN_URL") or "https://fim.temple.edu/idp/profile/oidc/token"
-    userinfo_url = (config.temple_sso.userinfo_url if (config and config.temple_sso) else None) or os.environ.get("TEMPLE_USERINFO_URL") or "https://fim.temple.edu/idp/profile/oidc/userinfo"
-    discovery_url = os.environ.get("TEMPLE_DISCOVERY_URL")
-    if discovery_url:
-        auth_url = discovery_url
-        
-    return client_id, client_secret, redirect_uri, auth_url, token_url, userinfo_url
 
 def get_microsoft_sso_credentials(config):
     client_id = (config.microsoft_sso.client_id if (config and config.microsoft_sso) else None) or os.environ.get("MICROSOFT_CLIENT_ID")
@@ -105,15 +85,13 @@ def verify_dashboard_password(request: Request):
     
     # Check if authentication is enabled overall
     g_id, _, _, _ = get_google_sso_credentials(app_config)
-    t_id, _, _, _, _, _ = get_temple_sso_credentials(app_config)
     m_id, _, _, _ = get_microsoft_sso_credentials(app_config)
     
     google_enabled = bool(g_id)
-    temple_enabled = bool(t_id)
     microsoft_enabled = bool(m_id)
     password_enabled = bool(dashboard_password and dashboard_password.strip() != "")
     
-    if not (password_enabled or google_enabled or temple_enabled or microsoft_enabled):
+    if not (password_enabled or google_enabled or microsoft_enabled):
         return True
         
     token = request.cookies.get("session_token")
@@ -165,15 +143,13 @@ def get_auth_config(request: Request):
     global dashboard_password, app_config
     
     g_id, _, _, _ = get_google_sso_credentials(app_config)
-    t_id, _, _, _, _, _ = get_temple_sso_credentials(app_config)
     m_id, _, _, _ = get_microsoft_sso_credentials(app_config)
     
     google_enabled = bool(g_id)
-    temple_enabled = bool(t_id)
     microsoft_enabled = bool(m_id)
     password_enabled = bool(dashboard_password and dashboard_password.strip() != "")
     
-    auth_enabled = password_enabled or google_enabled or temple_enabled or microsoft_enabled
+    auth_enabled = password_enabled or google_enabled or microsoft_enabled
     
     authorized = False
     if not auth_enabled:
@@ -194,7 +170,6 @@ def get_auth_config(request: Request):
         "password_enabled": password_enabled,
         "google_enabled": google_enabled,
         "google_client_id": g_id,
-        "temple_enabled": temple_enabled,
         "microsoft_enabled": microsoft_enabled,
         "microsoft_client_id": m_id
     }
@@ -202,10 +177,6 @@ def get_auth_config(request: Request):
 @app.get("/auth/google-mock/login", response_class=HTMLResponse)
 def google_mock_login(state: Optional[str] = None):
     return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
-
-@app.get("/auth/temple-mock/login", response_class=HTMLResponse)
-def temple_mock_login(state: Optional[str] = None):
-    return HTMLResponse(content=MOCK_TEMPLE_LOGIN_HTML)
 
 @app.get("/api/auth/google/login")
 def google_login(request: Request, redirect_to: Optional[str] = None):
@@ -297,96 +268,7 @@ async def google_callback(request: Request, response: Response, code: str, state
     res_redirect.delete_cookie("sso_redirect_origin")
     return res_redirect
 
-@app.get("/api/auth/temple/login")
-def temple_login(request: Request, redirect_to: Optional[str] = None):
-    referer = redirect_to or request.headers.get("referer") or "/"
-    
-    client_id, _, _, auth_endpoint, _, _ = get_temple_sso_credentials(app_config)
-    
-    if client_id and client_id != "mock":
-        state = "temple_state"
-        redirect_uri = f"{request.base_url}api/auth/temple/callback"
-        auth_url = (
-            f"{auth_endpoint}?"
-            f"client_id={client_id}&"
-            f"response_type=code&"
-            f"scope=openid%20email%20profile&"
-            f"redirect_uri={redirect_uri}&"
-            f"state={state}"
-        )
-        response = RedirectResponse(auth_url)
-    else:
-        state = "temple_state"
-        response = RedirectResponse(url=f"/auth/temple-mock/login?state={state}")
-        
-    response.set_cookie(key="sso_redirect_origin", value=referer, httponly=True, samesite="lax")
-    return response
-
-@app.get("/api/auth/temple/callback")
-async def temple_callback(request: Request, response: Response, code: str, state: Optional[str] = None, email: Optional[str] = None, name: Optional[str] = None):
-    user_email = email or "tux12345@temple.edu"
-    user_name = name or "tux12345"
-    
-    client_id, client_secret, _, _, token_url, userinfo_url = get_temple_sso_credentials(app_config)
-    _, _, _, allowed_emails_str = get_google_sso_credentials(app_config)
-    
-    if client_id and client_secret and code != "mock_code":
-        import httpx
-        try:
-            redirect_uri = f"{request.base_url}api/auth/temple/callback"
-            async with httpx.AsyncClient() as client:
-                token_res = await client.post(
-                    token_url,
-                    data={
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "code": code,
-                        "grant_type": "authorization_code",
-                        "redirect_uri": redirect_uri
-                    }
-                )
-                token_data = token_res.json()
-                access_token = token_data.get("access_token")
-                
-                userinfo_res = await client.get(
-                    userinfo_url,
-                    headers={"Authorization": f"Bearer {access_token}"}
-                )
-                userinfo = userinfo_res.json()
-                user_email = userinfo.get("email") or userinfo.get("upn") or userinfo.get("sub") or "unknown@temple.edu"
-                user_name = userinfo.get("name", user_email.split('@')[0])
-        except Exception as e:
-            logger.error(f"Temple OIDC exchange failed: {e}", exc_info=True)
-            raise HTTPException(status_code=400, detail=f"OIDC failure: {str(e)}")
-
-    if allowed_emails_str:
-        allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
-        if user_email.lower() not in allowed_emails and (f"{user_email.lower()}@temple.edu" not in allowed_emails):
-            raise HTTPException(status_code=403, detail=f"User {user_email} is not authorized to access this dashboard.")
-
-    payload = {
-        "email": user_email,
-        "name": user_name,
-        "provider": "temple",
-        "avatar": f"https://www.gravatar.com/avatar/{hashlib.md5(user_email.lower().encode()).hexdigest()}?d=mp"
-    }
-    jwt_token = create_jwt(payload)
-    
-    origin = request.cookies.get("sso_redirect_origin") or "/"
-    if origin.endswith("/"):
-        origin = origin[:-1]
-        
-    redirect_target = f"{origin}/"
-    res_redirect = RedirectResponse(url=redirect_target)
-    res_redirect.set_cookie(
-        key="session_token",
-        value=jwt_token,
-        httponly=True,
-        samesite="lax",
-        max_age=30 * 24 * 3600
-    )
-    res_redirect.delete_cookie("sso_redirect_origin")
-    return res_redirect
+# Temple SSO endpoints removed
 
 @app.post("/api/auth/login")
 def login(payload: dict, response: Response):
@@ -725,11 +607,10 @@ def get_status(request: Request):
     
     # Check if authorized
     google_enabled = bool(app_config and app_config.google_sso and app_config.google_sso.client_id)
-    temple_enabled = bool(app_config and app_config.temple_sso and app_config.temple_sso.client_id)
     microsoft_enabled = bool(app_config and app_config.microsoft_sso and app_config.microsoft_sso.client_id)
     password_enabled = bool(dashboard_password and dashboard_password.strip() != "")
     
-    auth_required = password_enabled or google_enabled or temple_enabled or microsoft_enabled
+    auth_required = password_enabled or google_enabled or microsoft_enabled
     authorized = False
     user_info = None
     
@@ -767,15 +648,13 @@ def get_status(request: Request):
         "password_enabled": password_enabled,
         "google_enabled": google_enabled,
         "google_client_id": app_config.google_sso.client_id if (app_config and app_config.google_sso) else None,
-        "temple_enabled": temple_enabled,
         "microsoft_enabled": microsoft_enabled,
         "microsoft_client_id": app_config.microsoft_sso.client_id if (app_config and app_config.microsoft_sso) else None,
         "alpaca_mode": alpaca_service.is_paper if alpaca_service else "unknown",
         "pulse_url": pulse_url,
         "pulse_online": pulse_online,
         "user": user_info,
-        "google_sso_configured": bool(GOOGLE_CLIENT_ID),
-        "temple_sso_configured": bool(TEMPLE_CLIENT_ID)
+        "google_sso_configured": bool(GOOGLE_CLIENT_ID)
     }
 
 

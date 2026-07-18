@@ -21,7 +21,6 @@ export default function Lockscreen({
   onUnlock,
   googleEnabled,
   googleClientId,
-  templeEnabled,
   microsoftEnabled,
   microsoftClientId,
   passwordEnabled = true,
@@ -72,9 +71,7 @@ export default function Lockscreen({
     }
   };
 
-  const handleTempleLogin = () => {
-    window.location.href = '/api/auth/temple/login';
-  };
+
 
   const handleMicrosoftLogin = async () => {
     setError('');
@@ -242,7 +239,7 @@ export default function Lockscreen({
           </form>
         )}
 
-        {passwordEnabled && (googleEnabled || templeEnabled || microsoftEnabled) && (
+        {passwordEnabled && (googleEnabled || microsoftEnabled) && (
           <div style={styles.divider}>
             <span style={styles.dividerLine}></span>
             <span style={styles.dividerText}>or</span>
@@ -250,7 +247,7 @@ export default function Lockscreen({
           </div>
         )}
 
-        {(googleEnabled || templeEnabled || microsoftEnabled) && (
+        {(googleEnabled || microsoftEnabled) && (
           <div style={styles.ssoContainer}>
             {googleEnabled && googleClientId === "mock" && (
               <button onClick={handleGoogleLogin} style={styles.googleButton}>
@@ -275,12 +272,6 @@ export default function Lockscreen({
                   <rect x="11" y="11" width="10" height="10" fill="#ffb900" />
                 </svg>
                 Sign in with Microsoft
-              </button>
-            )}
-            {templeEnabled && (
-              <button onClick={handleTempleLogin} style={styles.templeButton}>
-                <span style={styles.templeIcon}>T</span>
-                Sign in with Temple SSO
               </button>
             )}
           </div>
@@ -461,35 +452,7 @@ const styles = {
     transition: 'all 0.2s',
     outline: 'none',
   },
-  templeButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    padding: '12px 18px',
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    border: '1px solid transparent',
-    background: '#9e1b34', // Cherry red
-    color: '#ffffff',
-    boxShadow: '0 4px 14px rgba(158, 27, 52, 0.25)',
-    transition: 'all 0.2s',
-    outline: 'none',
-  },
-  templeIcon: {
-    width: 20,
-    height: 20,
-    background: '#ffffff',
-    color: '#9e1b34',
-    borderRadius: '4px',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   error: {
     color: 'var(--danger)',
     fontSize: 13,
@@ -534,33 +497,4 @@ const styles = {
     justifyContent: 'center',
     transition: 'all 0.2s',
   },
-  templeButton: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '10px 18px',
-    borderRadius: 12,
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    border: '1px solid transparent',
-    background: '#9e1b32',
-    color: '#fff',
-    boxShadow: '0 4px 12px rgba(158, 27, 50, 0.3)',
-    justifyContent: 'center',
-    transition: 'all 0.2s',
-  },
-  tBadge: {
-    background: '#fff',
-    color: '#9e1b32',
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 900,
-    fontSize: 12,
-    fontFamily: 'sans-serif',
-  }
 };

@@ -106,14 +106,7 @@ def test_sso_endpoints(tmp_path, mock_config_path):
         "redirect_uri": "",
         "allowed_emails": "test@gmail.com"
     }
-    cfg["temple_sso"] = {
-        "client_id": "mock",
-        "client_secret": "secret",
-        "redirect_uri": "",
-        "auth_url": "https://fim.temple.edu/idp/profile/oidc/authorize",
-        "token_url": "https://fim.temple.edu/idp/profile/oidc/token",
-        "userinfo_url": "https://fim.temple.edu/idp/profile/oidc/userinfo"
-    }
+
     with open(mock_config_path, "w") as f:
         yaml.safe_dump(cfg, f)
         
@@ -124,7 +117,6 @@ def test_sso_endpoints(tmp_path, mock_config_path):
         data = response.json()
         assert data["auth_enabled"] is True
         assert data["google_enabled"] is True
-        assert data["temple_enabled"] is True
         assert data["password_enabled"] is False
         
         # 2. Test Google SSO Login Redirect (Mock mode)
@@ -143,17 +135,7 @@ def test_sso_endpoints(tmp_path, mock_config_path):
         response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "hacker@gmail.com"})
         assert response.status_code == 403
         
-        # 5. Test Temple SSO Login Redirect (Mock mode)
-        response = client.get("/api/auth/temple/login", follow_redirects=False)
-        assert response.status_code == 307
-        target_url = response.headers.get("location")
-        assert "temple-mock/login" in target_url
-        
-        # 6. Test Temple Mock Callback
-        response = client.get("/api/auth/temple/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
-        assert response.status_code == 307
-        cookie_header = response.headers.get("set-cookie")
-        assert "session_token=" in cookie_header
+
 
 
 def test_config_endpoints(tmp_path, mock_config_path):

@@ -111,7 +111,6 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState(true);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [googleClientId, setGoogleClientId] = useState('');
-  const [templeEnabled, setTempleEnabled] = useState(false);
   const [microsoftEnabled, setMicrosoftEnabled] = useState(false);
   const [microsoftClientId, setMicrosoftClientId] = useState('');
   const [passwordEnabled, setPasswordEnabled] = useState(true);
@@ -156,7 +155,6 @@ export default function App() {
         setAuthorized(data.authorized);
         setGoogleEnabled(!!data.google_enabled);
         setGoogleClientId(data.google_client_id || '');
-        setTempleEnabled(!!data.temple_enabled);
         setMicrosoftEnabled(!!data.microsoft_enabled);
         setMicrosoftClientId(data.microsoft_client_id || '');
         setPasswordEnabled(data.password_enabled !== false);
@@ -431,7 +429,6 @@ export default function App() {
         onUnlock={handleUnlock}
         googleEnabled={googleEnabled}
         googleClientId={googleClientId}
-        templeEnabled={templeEnabled}
         microsoftEnabled={microsoftEnabled}
         microsoftClientId={microsoftClientId}
         passwordEnabled={passwordEnabled}
@@ -508,8 +505,8 @@ export default function App() {
                 padding: '2px 4px',
                 borderRadius: 4,
                 textTransform: 'uppercase',
-                background: user.provider === 'google' ? 'rgba(66, 133, 244, 0.15)' : user.provider === 'temple' ? 'rgba(158, 27, 50, 0.15)' : 'rgba(255,255,255,0.05)',
-                color: user.provider === 'google' ? '#4285f4' : user.provider === 'temple' ? '#9e1b32' : '#9ca3af',
+                background: user.provider === 'google' ? 'rgba(66, 133, 244, 0.15)' : 'rgba(255,255,255,0.05)',
+                color: user.provider === 'google' ? '#4285f4' : '#9ca3af',
               }}>
                 {user.provider}
               </span>
