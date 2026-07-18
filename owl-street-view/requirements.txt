@@ -10,3 +10,7 @@ alpaca-py>=0.26.0
 pytz
 websockets>=12.0
 httpx>=0.24.0
+google-auth>=2.0.0
+python-multipart>=0.0.5
+
+

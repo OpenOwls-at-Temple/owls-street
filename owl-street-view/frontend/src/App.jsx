@@ -7,6 +7,7 @@ import OrderPanel from './components/OrderPanel';
 import Orders from './components/Orders';
 import Screener from './components/Screener';
 import Lockscreen from './components/Lockscreen';
+import OwlSpeaksChat from './components/OwlSpeaksChat';
 import { DEFAULT_WATCHLIST_SYMBOLS } from './symbols';
 import { getAccount, getClock, getPositions } from './api';
 
@@ -108,6 +109,11 @@ export default function App() {
   const [authorized, setAuthorized] = useState(false);
   const [authEnabled, setAuthEnabled] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [microsoftEnabled, setMicrosoftEnabled] = useState(false);
+  const [microsoftClientId, setMicrosoftClientId] = useState('');
+  const [passwordEnabled, setPasswordEnabled] = useState(true);
   const [user, setUser] = useState(null);
   const [serverStatus, setServerStatus] = useState('disconnected'); // 'online' or 'disconnected'
   const [pulseUrl, setPulseUrl] = useState('http://localhost:8000');
@@ -147,6 +153,11 @@ export default function App() {
         const data = await res.json();
         setAuthEnabled(data.auth_enabled);
         setAuthorized(data.authorized);
+        setGoogleEnabled(!!data.google_enabled);
+        setGoogleClientId(data.google_client_id || '');
+        setMicrosoftEnabled(!!data.microsoft_enabled);
+        setMicrosoftClientId(data.microsoft_client_id || '');
+        setPasswordEnabled(data.password_enabled !== false);
         setServerStatus('online');
         setUser(data.user);
         if (data.pulse_url) {
@@ -413,7 +424,18 @@ export default function App() {
   }
 
   if (authEnabled && !authorized) {
-    return <Lockscreen onUnlock={handleUnlock} theme={theme} onToggleTheme={toggleTheme} />;
+    return (
+      <Lockscreen
+        onUnlock={handleUnlock}
+        googleEnabled={googleEnabled}
+        googleClientId={googleClientId}
+        microsoftEnabled={microsoftEnabled}
+        microsoftClientId={microsoftClientId}
+        passwordEnabled={passwordEnabled}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    );
   }
 
   return (
@@ -726,6 +748,7 @@ export default function App() {
             </div>
           )}
         </div>
+        <OwlSpeaksChat symbols={DEFAULT_WATCHLIST_SYMBOLS} />
       </div>
     </div>
   );

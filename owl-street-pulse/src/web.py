@@ -3,16 +3,18 @@ import time
 import logging
 import threading
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import hashlib
 from fastapi import FastAPI, Request, Response, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from src.auth_helper import verify_jwt, create_jwt, MOCK_GOOGLE_LOGIN_HTML
 
 from src.config import load_config, save_config, AppConfig
 from src.engine import AlertEngine
 from src.database import StateDatabase
+from src.chat import OwlSpeaksAgent
 
 logger = logging.getLogger(__name__)
 
@@ -95,17 +97,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import urllib.parse
+import secrets
+import httpx
+from fastapi.responses import RedirectResponse
+
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-
+def get_google_sso_credentials(config):
+    client_id = (config.google_sso.client_id if (config and config.google_sso) else None) or os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = (config.google_sso.client_secret if (config and config.google_sso) else None) or os.environ.get("GOOGLE_CLIENT_SECRET")
+    redirect_uri = (config.google_sso.redirect_uri if (config and config.google_sso) else None) or os.environ.get("GOOGLE_REDIRECT_URI")
+    allowed_emails = (config.google_sso.allowed_emails if (config and config.google_sso) else None) or os.environ.get("ALLOWED_EMAILS")
+    return client_id, client_secret, redirect_uri, allowed_emails
 
 # Authentication dependency
 def verify_dashboard_password(request: Request):
+    global active_sessions
     password = os.environ.get("DASHBOARD_PASSWORD")
-    if not password:
-        return True  # Auth is disabled if no password is set
+    
+    try:
+        config = load_config(CONFIG_PATH)
+        google_enabled = bool(config.google_sso and config.google_sso.client_id)
+    except Exception:
+        google_enabled = False
+        
+    password_enabled = bool(password and password.strip() != "")
+    
+    if not (password_enabled or google_enabled):
+        return True  # Auth is disabled if none are set
         
     token = request.cookies.get("session_token")
     if token == password:
@@ -129,6 +151,7 @@ def startup_event():
 
 @app.on_event("shutdown")
 def shutdown_event():
+    # Stop background engine runner
     runner.stop()
 
 # ----------------- UI Dashboard HTML Endpoint -----------------
@@ -148,24 +171,61 @@ def get_dashboard():
 
 # ----------------- API Endpoints -----------------
 
+@app.get("/api/auth/config")
+def get_auth_config(request: Request):
+    password = os.environ.get("DASHBOARD_PASSWORD")
+    
+    try:
+        config = load_config(CONFIG_PATH)
+        g_id, _, _, _ = get_google_sso_credentials(config)
+        google_enabled = bool(g_id)
+    except Exception:
+        google_enabled = False
+        
+    password_enabled = bool(password and password.strip() != "")
+    auth_enabled = password_enabled or google_enabled
+    
+    authorized = False
+    if not auth_enabled:
+        authorized = True
+    else:
+        token = request.cookies.get("session_token")
+        if token:
+            if password_enabled and token == password:
+                authorized = True
+            else:
+                payload = verify_jwt(token)
+                if payload:
+                    authorized = True
+                
+    return {
+        "auth_enabled": auth_enabled,
+        "authorized": authorized,
+        "password_enabled": password_enabled,
+        "google_enabled": google_enabled
+    }
+
 @app.get("/auth/google-mock/login", response_class=HTMLResponse)
 def google_mock_login(state: Optional[str] = None):
     return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
 
 
-
 @app.get("/api/auth/google/login")
 def google_login(request: Request, redirect_to: Optional[str] = None):
-    # Store redirect origin in cookie
     referer = redirect_to or request.headers.get("referer") or "/"
     
-    if GOOGLE_CLIENT_ID:
-        # Real Google Auth flow
+    try:
+        config = load_config(CONFIG_PATH)
+        client_id, _, _, _ = get_google_sso_credentials(config)
+    except Exception:
+        client_id = GOOGLE_CLIENT_ID
+        
+    if client_id and client_id != "mock":
         state = "google_state"
         redirect_uri = f"{request.base_url}api/auth/google/callback"
         auth_url = (
             f"https://accounts.google.com/o/oauth2/v2/auth?"
-            f"client_id={GOOGLE_CLIENT_ID}&"
+            f"client_id={client_id}&"
             f"response_type=code&"
             f"scope=openid%20email%20profile&"
             f"redirect_uri={redirect_uri}&"
@@ -173,7 +233,6 @@ def google_login(request: Request, redirect_to: Optional[str] = None):
         )
         response = RedirectResponse(auth_url)
     else:
-        # Mock Google Auth flow
         state = "google_state"
         response = RedirectResponse(url=f"/auth/google-mock/login?state={state}")
         
@@ -185,7 +244,15 @@ async def google_callback(request: Request, response: Response, code: str, state
     user_email = email or "shuv@gmail.com"
     user_name = name or "Shuv"
     
-    if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and code != "mock_code":
+    try:
+        config = load_config(CONFIG_PATH)
+        client_id, client_secret, _, allowed_emails_str = get_google_sso_credentials(config)
+    except Exception:
+        client_id = GOOGLE_CLIENT_ID
+        client_secret = GOOGLE_CLIENT_SECRET
+        allowed_emails_str = os.environ.get("ALLOWED_EMAILS", "")
+        
+    if client_id and client_secret and code != "mock_code":
         import httpx
         try:
             redirect_uri = f"{request.base_url}api/auth/google/callback"
@@ -193,8 +260,8 @@ async def google_callback(request: Request, response: Response, code: str, state
                 token_res = await client.post(
                     "https://oauth2.googleapis.com/token",
                     data={
-                        "client_id": GOOGLE_CLIENT_ID,
-                        "client_secret": GOOGLE_CLIENT_SECRET,
+                        "client_id": client_id,
+                        "client_secret": client_secret,
                         "code": code,
                         "grant_type": "authorization_code",
                         "redirect_uri": redirect_uri
@@ -213,6 +280,11 @@ async def google_callback(request: Request, response: Response, code: str, state
         except Exception as e:
             logger.error(f"Google OAuth exchange failed: {e}", exc_info=True)
             raise HTTPException(status_code=400, detail=f"OAuth failure: {str(e)}")
+
+    if allowed_emails_str:
+        allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
+        if user_email.lower() not in allowed_emails:
+            raise HTTPException(status_code=403, detail=f"Email {user_email} is not authorized to access this dashboard.")
 
     payload = {
         "email": user_email,
@@ -238,7 +310,7 @@ async def google_callback(request: Request, response: Response, code: str, state
     res_redirect.delete_cookie("sso_redirect_origin")
     return res_redirect
 
-
+# Temple SSO endpoints removed
 
 @app.post("/api/auth/login")
 def login(payload: dict, response: Response):
@@ -262,7 +334,7 @@ def login(payload: dict, response: Response):
 
 @app.post("/api/auth/logout")
 def logout(response: Response):
-    """Clears authentication session cookie."""
+    """Logs out the user by deleting cookie."""
     response.delete_cookie("session_token")
     return {"status": "success"}
 
@@ -270,14 +342,21 @@ def logout(response: Response):
 def get_status(request: Request):
     """Returns runtime status of the alert engine and system parameters, including SSO configuration."""
     password = os.environ.get("DASHBOARD_PASSWORD")
-    auth_required = bool(password and password.strip() != "")
+    try:
+        config = load_config(CONFIG_PATH)
+        g_id, _, _, _ = get_google_sso_credentials(config)
+        google_enabled = bool(g_id)
+    except Exception:
+        google_enabled = False
+        
+    auth_required = bool(password and password.strip() != "") or google_enabled
     authorized = False
     user_info = None
     
     token = request.cookies.get("session_token")
     if not auth_required:
         authorized = True
-    elif token == password:
+    elif password and token == password:
         authorized = True
         user_info = {"email": "admin@pulse", "name": "Admin User", "provider": "password"}
     else:
@@ -290,7 +369,6 @@ def get_status(request: Request):
                 "provider": payload.get("provider"),
                 "avatar": payload.get("avatar")
             }
-            
     db = StateDatabase(db_path=DB_PATH)
     
     db_size = 0
@@ -440,3 +518,29 @@ def trigger_test_alert(rule_id: str):
         return {"status": "success", "message": f"Test alert sent for rule: {target_rule.name}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to dispatch test alert: {str(e)}")
+
+# ----------------- Chat Endpoint -----------------
+
+class ChatRequest(BaseModel):
+    message: str
+    symbol: Optional[str] = None
+    history: Optional[List[Dict[str, str]]] = None
+    images: Optional[List[str]] = None
+
+@app.post("/api/chat", dependencies=[Depends(verify_dashboard_password)])
+async def chat_with_owl(payload: ChatRequest):
+    """Sends a chat message to the local Owl Speaks agent and returns the response."""
+    logger.info(f"Received chat request: message_len={len(payload.message)}, symbol={payload.symbol}, history_len={len(payload.history) if payload.history else 0}, images={payload.images}")
+    try:
+        config = load_config(CONFIG_PATH)
+        agent = OwlSpeaksAgent(config, db_path=DB_PATH)
+        response_text = await agent.generate_response(
+            user_message=payload.message,
+            symbol=payload.symbol,
+            history=payload.history,
+            images=payload.images
+        )
+        return {"status": "success", "response": response_text}
+    except Exception as e:
+        logger.error(f"Error in /api/chat endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to communicate with LLM: {str(e)}")

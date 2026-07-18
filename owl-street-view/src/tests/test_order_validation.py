@@ -1,7 +1,7 @@
 from fastapi import HTTPException
-
 import pytest
 from src.alpaca_service import AlpacaService
+
 
 # Initialize a dummy service instance for validation testing
 service = AlpacaService(api_key="dummy", secret_key="dummy")

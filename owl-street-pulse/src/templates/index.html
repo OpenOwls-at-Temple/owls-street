@@ -652,6 +652,189 @@
             cursor: pointer;
             font-size: 13px;
         }
+
+        /* Floating Chat Widget Styles */
+        .owl-chat-trigger-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669); /* Pulse Green themed */
+            color: #ffffff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+            z-index: 9998;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        .owl-chat-trigger-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+        }
+        .owl-chat-overlay {
+            position: fixed;
+            bottom: 96px;
+            right: 24px;
+            width: 400px;
+            height: 540px;
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            display: none; /* Controlled by display: flex via JS */
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 9998;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .owl-chat-overlay.active {
+            display: flex;
+        }
+        .chat-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+        }
+        .chat-selector-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-message {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .chat-message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        }
+        .chat-message.assistant {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom-left-radius: 2px;
+        }
+        .chat-message.system-error {
+            align-self: center;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            max-width: 90%;
+        }
+        .chat-message pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 6px 0;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .chat-message code {
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .chat-input-bar {
+            display: flex;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .chat-input-field {
+            flex: 1;
+            resize: none;
+            height: 36px;
+            border-radius: 8px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1.4;
+            transition: all 0.3s;
+        }
+        .chat-input-field:focus {
+            outline: none;
+            border-color: #10b981;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .chat-send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        .chat-send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+        }
+        .chat-message-loader {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+        }
+        .chat-loader-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: pulse-loader 1.4s infinite ease-in-out;
+        }
+        @keyframes pulse-loader {
+            0%, 100% { transform: scale(0.6); opacity: 0.4; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -669,37 +852,34 @@
                 </div>
                 <div class="logo-text">Owl Street Pulse</div>
             </div>
-            <p style="color: var(--text-secondary); font-size: 14px;">Enter password to unlock dashboard</p>
-            <div class="form-group" style="margin-bottom: 0;">
-                <input type="password" id="auth-password" class="form-control" placeholder="••••••••" style="text-align: center;">
+            <p id="auth-subtitle" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">Enter password to unlock dashboard</p>
+            <div id="auth-password-form">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <input type="password" id="auth-password" class="form-control" placeholder="••••••••" style="text-align: center;">
+                </div>
+                <button id="auth-submit-btn" class="btn btn-primary" style="justify-content: center; width: 100%;">Unlock Dashboard</button>
             </div>
-            <button id="auth-submit-btn" class="btn btn-primary" style="justify-content: center;">Unlock Dashboard</button>
-            <p id="auth-error-msg" style="color: var(--accent-danger); font-size: 13px; display: none;"></p>
-            
-            <div style="margin: 16px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <div style="flex-grow: 1; height: 1px; background: rgba(255,255,255,0.08);"></div>
-                <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">Or Sign In With</span>
-                <div style="flex-grow: 1; height: 1px; background: rgba(255,255,255,0.08);"></div>
+            <div id="auth-divider" style="display: none; align-items: center; justify-content: center; gap: 10px; margin: 16px 0;">
+                <span style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.08);"></span>
+                <span style="color: #4b5563; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">or</span>
+                <span style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.08);"></span>
             </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- Google SSO Button -->
-                <button onclick="window.location.href='/api/auth/google/login'" class="btn" style="background: #fff; color: #1f2937; justify-content: center; font-weight: 600; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #e5e7eb;">
-                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; margin-right: 8px;" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+            <div id="auth-sso-container" style="display: none; flex-direction: column; gap: 12px;">
+                <button id="google-login-btn" class="btn" style="background: white; color: #1f2937; justify-content: center; width: 100%; border: 1px solid rgba(255,255,255,0.06); display: none; align-items: center; gap: 10px; font-weight: 600;">
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
-                    Google
+                    Sign in with Google
                 </button>
-                
-                <!-- Temple University SSO Button -->
-                <button onclick="window.location.href='/api/auth/temple/login'" class="btn" style="background: #9e1b32; color: #fff; justify-content: center; font-weight: 600; border-radius: 12px; box-shadow: 0 4px 12px rgba(158, 27, 50, 0.3);">
-                    <div style="background: #fff; color: #9e1b32; width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; margin-right: 8px; font-family: sans-serif;">T</div>
-                    Temple University
+                <button id="temple-login-btn" class="btn" style="background: #9e1b34; color: white; justify-content: center; width: 100%; border: none; display: none; align-items: center; gap: 10px; font-weight: 600; box-shadow: 0 4px 14px rgba(158, 27, 52, 0.25);">
+                    <span style="width: 20px; height: 20px; background: white; color: #9e1b34; border-radius: 4px; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center;">T</span>
+                    Sign in with Temple SSO
                 </button>
             </div>
+            <p id="auth-error-msg" style="color: var(--accent-danger); font-size: 13px; display: none; margin-top: 12px;"></p>
         </div>
     </div>
 
@@ -733,6 +913,7 @@
                     Alert Logs
                 </div>
             </li>
+
             <li>
                 <div class="nav-item" onclick="switchTab('settings', this)">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.59 4.59A2 2 0 1111 8H2.25m11.385 7.347A1.002 1.002 0 0015 16h4.5a2.25 2.25 0 002.25-2.25V9a2.25 2.25 0 00-2.25-2.25h-5.4a1 1 0 01-.707-.293l-1.8-1.8A1 1 0 0010.5 4.5h-4.5A2.25 2.25 0 003.75 6.75V15M9 21h6"></path></svg>
@@ -938,6 +1119,8 @@
             </form>
         </div>
 
+
+
     </div>
 
     <!-- Rule / Monitor Creator Modal -->
@@ -1048,7 +1231,93 @@
             
             // Loop check status every 5 seconds
             setInterval(fetchStatus, 5000);
+
+            // Hook up chat widget floating togglers
+            document.getElementById("owl-chat-trigger").addEventListener("click", toggleChatWidget);
+            document.getElementById("owl-chat-close").addEventListener("click", toggleChatWidget);
+            document.getElementById("owl-chat-history-toggle").addEventListener("click", toggleHistoryDrawer);
+            
+            // Hook up image attachment buttons
+            document.getElementById("owl-chat-attach-btn").addEventListener("click", () => {
+                document.getElementById("owl-chat-file-input").click();
+            });
+            document.getElementById("owl-chat-file-input").addEventListener("change", (e) => {
+                handleImageFiles(e.target.files);
+            });
+            
+            // Context symbol dropdown change listener
+            document.getElementById("chat-symbol-selector").addEventListener("change", (e) => {
+                const thread = threads.find(t => t.id === activeThreadId);
+                if (thread) {
+                    thread.symbol = e.target.value;
+                    saveChatThreads();
+                }
+            });
+
+            // Clipboard paste image listener
+            document.getElementById("chat-input").addEventListener("paste", (e) => {
+                const items = e.clipboardData?.items || [];
+                const imageItems = Array.from(items).filter(item => item.type.indexOf('image') !== -1);
+                if (imageItems.length > 0) {
+                    e.preventDefault();
+                    const files = imageItems.map(item => item.getAsFile());
+                    handleImageFiles(files);
+                }
+            });
+
+            // Load saved chat threads
+            initChatThreads();
         });
+
+        // Keybind toggle Cmd+K or Ctrl+K for chat widget
+        document.addEventListener("keydown", (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+                e.preventDefault();
+                toggleChatWidget();
+            }
+        });
+
+        function toggleChatWidget() {
+            const widget = document.getElementById("owl-chat-widget");
+            widget.classList.toggle("active");
+            if (widget.classList.contains("active")) {
+                populateChatSymbolSelector().then(() => {
+                    const thread = threads.find(t => t.id === activeThreadId);
+                    if (thread) {
+                        document.getElementById("chat-symbol-selector").value = thread.symbol || "";
+                    }
+                });
+                setTimeout(() => {
+                    document.getElementById("chat-input").focus();
+                }, 100);
+            }
+        }
+
+        async function populateChatSymbolSelector() {
+            try {
+                if (!currentConfig) {
+                    currentConfig = await apiCall("/api/config");
+                }
+                const selector = document.getElementById("chat-symbol-selector");
+                const currentVal = selector.value;
+                
+                selector.innerHTML = '<option value="">No Context</option>';
+                
+                if (currentConfig && currentConfig.monitors) {
+                    currentConfig.monitors.forEach(monitor => {
+                        const opt = document.createElement("option");
+                        opt.value = monitor.symbol;
+                        opt.textContent = `Context: ${monitor.symbol}`;
+                        selector.appendChild(opt);
+                    });
+                }
+                if (currentVal) {
+                    selector.value = currentVal;
+                }
+            } catch (e) {
+                console.error("Failed to populate chat symbol selector:", e);
+            }
+        }
 
         async function initApp() {
             // Test connection/authentication
@@ -1077,13 +1346,43 @@
             }
         }
 
-        function showLockscreen(show) {
+        async function showLockscreen(show) {
             const ls = document.getElementById("auth-lockscreen");
             const logoutBtn = document.getElementById("logout-btn");
             if (show) {
                 ls.classList.add("active");
                 authEnabled = true;
                 logoutBtn.style.display = "none";
+                
+                // Fetch auth config to adjust lockscreen buttons
+                try {
+                    const res = await fetch("/api/auth/config");
+                    if (res.ok) {
+                        const data = await res.json();
+                        const googleBtn = document.getElementById("google-login-btn");
+                        const templeBtn = document.getElementById("temple-login-btn");
+                        const pwForm = document.getElementById("auth-password-form");
+                        const divider = document.getElementById("auth-divider");
+                        const ssoContainer = document.getElementById("auth-sso-container");
+                        const subtitle = document.getElementById("auth-subtitle");
+                        
+                        pwForm.style.display = data.password_enabled ? "block" : "none";
+                        googleBtn.style.display = data.google_enabled ? "flex" : "none";
+                        templeBtn.style.display = data.temple_enabled ? "flex" : "none";
+                        
+                        const hasSso = data.google_enabled || data.temple_enabled;
+                        ssoContainer.style.display = hasSso ? "flex" : "none";
+                        divider.style.display = (data.password_enabled && hasSso) ? "flex" : "none";
+                        
+                        if (data.password_enabled) {
+                            subtitle.innerText = "Enter password or sign in using SSO to unlock dashboard";
+                        } else {
+                            subtitle.innerText = "Sign in using SSO to unlock dashboard";
+                        }
+                    }
+                } catch(e) {
+                    console.error("Failed to load auth config:", e);
+                }
             } else {
                 ls.classList.remove("active");
                 logoutBtn.style.display = "block";
@@ -1094,6 +1393,12 @@
         document.getElementById("auth-submit-btn").addEventListener("click", performUnlock);
         document.getElementById("auth-password").addEventListener("keypress", (e) => {
             if (e.key === "Enter") performUnlock();
+        });
+        document.getElementById("google-login-btn").addEventListener("click", () => {
+            window.location.href = "/api/auth/google/login";
+        });
+        document.getElementById("temple-login-btn").addEventListener("click", () => {
+            window.location.href = "/api/auth/temple/login";
         });
 
         async function performUnlock() {
@@ -1821,6 +2126,487 @@
                 toast.classList.remove("active");
             }, 3000);
         }
+
+        // ----------------- Owl Speaks Chat Controller -----------------
+        let threads = [];
+        let activeThreadId = null;
+        let attachedImages = [];
+
+        function initChatThreads() {
+            const saved = localStorage.getItem("owl_speaks_threads");
+            if (saved) {
+                try {
+                    threads = JSON.parse(saved);
+                } catch(e) {
+                    console.error("Failed to load threads:", e);
+                }
+            }
+            
+            if (!threads || threads.length === 0) {
+                const defaultId = "t_" + Date.now();
+                threads = [{
+                    id: defaultId,
+                    title: "New Analysis",
+                    symbol: "",
+                    timestamp: Date.now(),
+                    messages: [{
+                        role: "assistant",
+                        content: "Hello! I am **Owl Speaks**, your local financial intelligence assistant.\n\nHow can I assist you with your market analysis today?"
+                    }]
+                }];
+            }
+            
+            activeThreadId = localStorage.getItem("owl_speaks_active_thread_id") || threads[0].id;
+            if (!threads.find(t => t.id === activeThreadId)) {
+                activeThreadId = threads[0].id;
+            }
+            
+            saveChatThreads();
+            renderActiveThreadMessages();
+        }
+
+        function saveChatThreads() {
+            localStorage.setItem("owl_speaks_threads", JSON.stringify(threads));
+            localStorage.setItem("owl_speaks_active_thread_id", activeThreadId);
+        }
+
+        function renderActiveThreadMessages() {
+            const thread = threads.find(t => t.id === activeThreadId) || threads[0];
+            const historyBox = document.getElementById("chat-history-box");
+            historyBox.innerHTML = "";
+            
+            thread.messages.forEach(msg => {
+                const bubble = document.createElement("div");
+                bubble.className = `chat-message ${msg.role}`;
+                let html = formatMarkdown(msg.content);
+                if (msg.images) {
+                    msg.images.forEach(img => {
+                        html += `<img src="${img}" style="max-width: 100%; border-radius: 8px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.1);">`;
+                    });
+                }
+                bubble.innerHTML = html;
+                historyBox.appendChild(bubble);
+            });
+            historyBox.scrollTop = historyBox.scrollHeight;
+            
+            // Update selected symbol value
+            const selector = document.getElementById("chat-symbol-selector");
+            if (selector) {
+                selector.value = thread.symbol || "";
+            }
+        }
+
+        function toggleHistoryDrawer() {
+            const drawer = document.getElementById("owl-chat-history-drawer");
+            drawer.style.display = drawer.style.display === "flex" ? "none" : "flex";
+            if (drawer.style.display === "flex") {
+                renderHistoryDrawerList();
+            }
+        }
+
+        function renderHistoryDrawerList() {
+            const list = document.getElementById("owl-chat-history-list");
+            list.innerHTML = "";
+            threads.forEach(t => {
+                const item = document.createElement("div");
+                item.className = "drawer-item";
+                if (t.id === activeThreadId) {
+                    item.style.backgroundColor = "rgba(99, 102, 241, 0.15)";
+                    item.style.borderColor = "#6366f1";
+                }
+                item.style.display = "flex";
+                item.style.justifyContent = "space-between";
+                item.style.alignItems = "center";
+                item.style.padding = "8px 12px";
+                item.style.borderRadius = "8px";
+                item.style.cursor = "pointer";
+                item.style.border = "1px solid " + (t.id === activeThreadId ? "#6366f1" : "transparent");
+                item.style.marginBottom = "4px";
+                item.style.transition = "all 0.2s";
+                
+                const title = document.createElement("span");
+                title.textContent = t.title;
+                title.style.color = "#e5e7eb";
+                title.style.fontSize = "13px";
+                title.style.whiteSpace = "nowrap";
+                title.style.overflow = "hidden";
+                title.style.textOverflow = "ellipsis";
+                title.style.flex = "1";
+                item.appendChild(title);
+                
+                item.addEventListener("click", () => {
+                    activeThreadId = t.id;
+                    saveChatThreads();
+                    renderActiveThreadMessages();
+                    toggleHistoryDrawer();
+                });
+                
+                const delBtn = document.createElement("button");
+                delBtn.innerHTML = "&times;";
+                delBtn.style.background = "transparent";
+                delBtn.style.color = "#ef4444";
+                delBtn.style.border = "none";
+                delBtn.style.fontSize = "16px";
+                delBtn.style.cursor = "pointer";
+                delBtn.style.outline = "none";
+                delBtn.style.marginLeft = "8px";
+                delBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    deleteThread(t.id);
+                });
+                item.appendChild(delBtn);
+                
+                list.appendChild(item);
+            });
+        }
+
+        function createNewThread() {
+            const newId = "t_" + Date.now();
+            const newThread = {
+                id: newId,
+                title: "New Analysis",
+                symbol: "",
+                timestamp: Date.now(),
+                messages: [{
+                    role: "assistant",
+                    content: "Hello! I am **Owl Speaks**, your local financial intelligence assistant. How can I help you today?"
+                }]
+            };
+            threads.unshift(newThread);
+            activeThreadId = newId;
+            saveChatThreads();
+            renderActiveThreadMessages();
+            toggleHistoryDrawer();
+        }
+
+        function deleteThread(id) {
+            threads = threads.filter(t => t.id !== id);
+            if (threads.length === 0) {
+                const defaultId = "t_" + Date.now();
+                threads = [{
+                    id: defaultId,
+                    title: "New Analysis",
+                    symbol: "",
+                    timestamp: Date.now(),
+                    messages: [{
+                        role: "assistant",
+                        content: "Hello! I am **Owl Speaks**, your local financial intelligence assistant. How can I help you today?"
+                    }]
+                }];
+                activeThreadId = defaultId;
+            } else if (activeThreadId === id) {
+                activeThreadId = threads[0].id;
+            }
+            saveChatThreads();
+            renderActiveThreadMessages();
+            renderHistoryDrawerList();
+        }
+
+        function handleImageFiles(files) {
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    attachedImages.push(reader.result);
+                    renderAttachmentPreviews();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderAttachmentPreviews() {
+            const previewBox = document.getElementById("owl-chat-preview-box");
+            previewBox.innerHTML = "";
+            if (attachedImages.length > 0) {
+                previewBox.style.display = "flex";
+                attachedImages.forEach((img, idx) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.style.position = "relative";
+                    wrapper.style.width = "60px";
+                    wrapper.style.height = "60px";
+                    wrapper.style.borderRadius = "6px";
+                    wrapper.style.overflow = "hidden";
+                    wrapper.style.flexShrink = "0";
+                    wrapper.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+                    
+                    const image = document.createElement("img");
+                    image.src = img;
+                    image.style.width = "100%";
+                    image.style.height = "100%";
+                    image.style.objectFit = "cover";
+                    wrapper.appendChild(image);
+                    
+                    const delBtn = document.createElement("button");
+                    delBtn.innerHTML = "&times;";
+                    delBtn.style.position = "absolute";
+                    delBtn.style.top = "2px";
+                    delBtn.style.right = "2px";
+                    delBtn.style.width = "16px";
+                    delBtn.style.height = "16px";
+                    delBtn.style.borderRadius = "50%";
+                    delBtn.style.background = "rgba(0, 0, 0, 0.7)";
+                    delBtn.style.color = "#ffffff";
+                    delBtn.style.border = "none";
+                    delBtn.style.fontSize = "10px";
+                    delBtn.style.display = "flex";
+                    delBtn.style.alignItems = "center";
+                    delBtn.style.justifyContent = "center";
+                    delBtn.style.cursor = "pointer";
+                    delBtn.addEventListener("click", () => {
+                        attachedImages = attachedImages.filter((_, i) => i !== idx);
+                        renderAttachmentPreviews();
+                    });
+                    wrapper.appendChild(delBtn);
+                    
+                    previewBox.appendChild(wrapper);
+                });
+            } else {
+                previewBox.style.display = "none";
+            }
+        }
+
+        async function sendChatMessage() {
+            const inputField = document.getElementById("chat-input");
+            const userMsg = inputField.value.trim();
+            const currentImages = [...attachedImages];
+
+            if (!userMsg && currentImages.length === 0) return;
+
+            // Clear inputs
+            inputField.value = "";
+            inputField.style.height = "36px";
+            document.getElementById("owl-chat-preview-box").innerHTML = "";
+            attachedImages = [];
+            document.getElementById("owl-chat-preview-box").style.display = "none";
+
+            const thread = threads.find(t => t.id === activeThreadId);
+            if (!thread) return;
+
+            const userMessageObj = {
+                role: "user",
+                content: userMsg,
+                images: currentImages
+            };
+            thread.messages.push(userMessageObj);
+
+            if (thread.title === "New Analysis" && userMsg) {
+                thread.title = userMsg.length > 25 ? userMsg.substring(0, 25) + "..." : userMsg;
+            }
+            thread.timestamp = Date.now();
+            saveChatThreads();
+            renderActiveThreadMessages();
+
+            // Render loader
+            const historyBox = document.getElementById("chat-history-box");
+            const loaderBubble = document.createElement("div");
+            loaderBubble.className = "chat-message assistant";
+            loaderBubble.id = "chat-typing-loader";
+            loaderBubble.innerHTML = `
+                <div class="chat-message-loader">
+                    <span class="chat-loader-dot"></span>
+                    <span class="chat-loader-dot"></span>
+                    <span class="chat-loader-dot"></span>
+                </div>
+            `;
+            historyBox.appendChild(loaderBubble);
+            historyBox.scrollTop = historyBox.scrollHeight;
+
+            try {
+                const cleanedBase64Images = currentImages.map(img => img.split(",")[1]);
+                const payload = {
+                    message: userMsg,
+                    symbol: thread.symbol || null,
+                    history: thread.messages.slice(1, -1).map(h => ({
+                        role: h.role,
+                        content: h.content
+                    })),
+                    images: cleanedBase64Images.length > 0 ? cleanedBase64Images : null
+                };
+
+                const res = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.status === 401) {
+                    showLockscreen(true);
+                    loaderBubble.remove();
+                    thread.messages.pop();
+                    saveChatThreads();
+                    renderActiveThreadMessages();
+                    return;
+                }
+
+                loaderBubble.remove();
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || "Failed to generate response.");
+                }
+
+                const assistantMsg = data.response;
+                thread.messages.push({ role: "assistant", content: assistantMsg });
+                saveChatThreads();
+                renderActiveThreadMessages();
+
+            } catch (e) {
+                loaderBubble.remove();
+                
+                const errorBubble = document.createElement("div");
+                errorBubble.className = "chat-message system-error";
+                errorBubble.innerHTML = `<strong>Error:</strong> ${formatMarkdown(e.message)}`;
+                historyBox.appendChild(errorBubble);
+                historyBox.scrollTop = historyBox.scrollHeight;
+                
+                thread.messages.pop();
+                saveChatThreads();
+            }
+        }
+
+        function clearChatHistory() {
+            threads = threads.map(t => {
+                if (t.id === activeThreadId) {
+                    return {
+                        ...t,
+                        messages: [{
+                            role: "assistant",
+                            content: "Conversation history reset. How can I help you?"
+                        }]
+                    };
+                }
+                return t;
+            });
+            saveChatThreads();
+            renderActiveThreadMessages();
+        }
+
+        function handleChatInputKey(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        function formatMarkdown(text) {
+            if (!text) return "";
+            
+            // Escape HTML tags to prevent XSS issues
+            let html = text.replace(/&/g, "&amp;")
+                       .replace(/</g, "&lt;")
+                       .replace(/>/g, "&gt;");
+            
+            // Fenced code blocks
+            html = html.replace(/```(?:[a-zA-Z0-9]+)?\n([\s\S]*?)\n```/g, '<pre><code>$1</code></pre>');
+            
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Bold
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            
+            // Horizontal rule
+            html = html.replace(/---/g, '<hr style="border: 0; border-top: 1px solid var(--border-color); margin: 12px 0;">');
+
+            // Bullet points (handle lines starting with - or *)
+            html = html.replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>');
+            
+            // Group adjacent <li> elements into <ul>
+            html = html.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
+            html = html.replace(/<\/ul>\s*<ul>/g, ''); // dedupe adjacent wraps
+            
+            // Line breaks
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
     </script>
+    <!-- Floating Owl Speaks Chat Widget -->
+    <button id="owl-chat-trigger" class="owl-chat-trigger-btn" title="Owl Speaks Chat (Cmd + K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 26px; height: 26px;">
+            <!-- Owl Ears / Head Outline -->
+            <path d="M12 2C6.5 2 4 4.5 4 8c0 4.5 3 11 8 13.5 5-2.5 8-9 8-13.5 0-3.5-2.5-6-8-6z"></path>
+            <!-- Left Eye -->
+            <circle cx="9" cy="9" r="2.5"></circle>
+            <circle cx="9" cy="9" r="0.8" fill="currentColor"></circle>
+            <!-- Right Eye -->
+            <circle cx="15" cy="9" r="2.5"></circle>
+            <circle cx="15" cy="9" r="0.8" fill="currentColor"></circle>
+            <!-- Beak -->
+            <path d="M12 11l-1.5 2.5 1.5 1 1.5-1-1.5-2.5z" fill="currentColor"></path>
+            <!-- Speech / Sound Wave indicators to represent "Speaks" -->
+            <path d="M19 8c1.5 1 1.5 3 0 4M21 6c2.5 1.5 2.5 5.5 0 7" stroke-width="1.5"></path>
+        </svg>
+    </button>
+
+    <div id="owl-chat-widget" class="owl-chat-overlay">
+        <!-- Header -->
+        <div class="chat-header-bar">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="owl-chat-history-toggle" style="background: transparent; border: none; cursor: pointer; color: #ffffff; padding: 0; display: flex; align-items: center;" title="Conversations">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"></path>
+                    </svg>
+                </button>
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
+                <span style="font-size: 14px; font-weight: 700; color: #ffffff;">Owl Speaks GPT</span>
+            </div>
+            
+            <select id="chat-symbol-selector" style="background: rgba(0, 0, 0, 0.3); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 4px 8px; font-size: 11px; outline: none; max-width: 120px; cursor: pointer;">
+                <option value="">No Context</option>
+            </select>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button onclick="clearChatHistory()" style="background: transparent; color: #9ca3af; border: none; font-size: 11px; font-weight: 500; cursor: pointer; outline: none;">Clear</button>
+                <button id="owl-chat-close" style="background: transparent; color: #ffffff; border: none; font-size: 20px; cursor: pointer; outline: none; line-height: 1;">&times;</button>
+            </div>
+        </div>
+
+        <div style="display: flex; flex: 1; position: relative; overflow: hidden;">
+            <!-- Sliding History Drawer -->
+            <div id="owl-chat-history-drawer" style="position: absolute; top: 0; left: 0; width: 60%; height: 100%; background: rgba(11, 15, 26, 0.95); border-right: 1px solid rgba(255, 255, 255, 0.08); display: none; flex-direction: column; z-index: 9999;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                    <span style="color: #ffffff; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Conversations</span>
+                    <button onclick="createNewThread()" style="background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; font-weight: 600; cursor: pointer; outline: none;">+ New</button>
+                </div>
+                <div id="owl-chat-history-list" style="flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+            </div>
+
+            <!-- Chat Body -->
+            <div style="flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+                <div id="chat-history-box" class="chat-history">
+                    <div class="chat-message assistant">
+                        Hello! I am **Owl Speaks**, your local financial intelligence assistant. 
+                        
+                        How can I assist you with your market analysis today?
+                    </div>
+                </div>
+
+                <!-- Attachment preview box -->
+                <div id="owl-chat-preview-box" style="display: none; gap: 8px; padding: 8px 16px; background: rgba(0, 0, 0, 0.15); border-top: 1px solid rgba(255, 255, 255, 0.05); overflow-x: auto;"></div>
+
+                <div class="chat-input-bar">
+                    <button type="button" id="owl-chat-attach-btn" style="background: transparent; color: #9ca3af; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; outline: none; width: 32px; height: 32px;" title="Upload image">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.5l-10.5 10.5a1.5 1.5 0 11-2.12-2.12l8.83-8.83m-6.02 6.02l-1.07-1.07"></path>
+                        </svg>
+                    </button>
+                    <input type="file" id="owl-chat-file-input" accept="image/*" multiple style="display: none;">
+                    
+                    <textarea id="chat-input" class="chat-input-field" placeholder="Ask Owl Speaks (paste screenshots)..." rows="1" onkeydown="handleChatInputKey(event)"></textarea>
+                    
+                    <button id="chat-send-btn" class="chat-send-btn" onclick="sendChatMessage()">
+                        <svg fill="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                            <path d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6a.996.996 0 00-1.41.92l.01 5.37c0 .5.37.93.87.98l12.73 1.13c.27.02.27.42 0 .44L2.87 13.57a.993.993 0 00-.87.98l-.01 5.37c-.01.69.65 1.2 1.41.48z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
