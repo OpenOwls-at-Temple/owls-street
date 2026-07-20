@@ -964,33 +964,3 @@ if os.path.exists(frontend_dir):
         return HTMLResponse(content="<h1>Frontend index.html not found!</h1>", status_code=404)
 else:
     logger.warning("Frontend build directory 'frontend/build' not found. App will run in API-only mode.")
-
-    @app.get("/", response_class=HTMLResponse)
-    def root_landing():
-        return HTMLResponse(content="""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Owl Street View API</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0b0f19; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-                .card { background: #1e293b; border: 1px solid #334155; padding: 32px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-                h1 { color: #38bdf8; margin-top: 0; font-size: 24px; }
-                p { color: #94a3b8; line-height: 1.6; }
-                a { color: #38bdf8; text-decoration: none; font-weight: 600; }
-                a:hover { text-decoration: underline; }
-                .endpoint { background: #0f172a; padding: 10px 14px; border-radius: 6px; border: 1px solid #1e293b; margin-top: 12px; font-family: monospace; font-size: 14px; }
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h1>🦉 Owl Street View API Online</h1>
-                <p>The Python FastAPI backend service is running successfully on Vercel Serverless.</p>
-                <div class="endpoint">
-                    GET <a href="/api/status">/api/status</a> — Read System Status
-                </div>
-            </div>
-        </body>
-        </html>
-        """)
