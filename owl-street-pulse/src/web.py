@@ -209,6 +209,7 @@ def get_auth_config(request: Request):
 def google_mock_login(state: Optional[str] = None):
     return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
 
+
 @app.get("/api/auth/google/login")
 def google_login(request: Request, redirect_to: Optional[str] = None):
     referer = redirect_to or request.headers.get("referer") or "/"
