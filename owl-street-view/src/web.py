@@ -944,8 +944,18 @@ async def websocket_quotes(websocket: WebSocket):
 
 # ── Serve React Static Assets ────────────────────────────────────────────────
 
-frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "build")
-if os.path.exists(frontend_dir):
+possible_frontend_dirs = [
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "build"),
+    os.path.join(os.getcwd(), "owl-street-view", "frontend", "build"),
+    os.path.join(os.getcwd(), "frontend", "build"),
+]
+frontend_dir = None
+for d in possible_frontend_dirs:
+    if os.path.exists(d):
+        frontend_dir = d
+        break
+
+if frontend_dir and os.path.exists(frontend_dir):
     logger.info(f"Serving frontend static build from: {frontend_dir}")
     
     # Mount static assets directory
