@@ -384,8 +384,9 @@ def get_status(request: Request):
     if runner.start_time:
         uptime = int(time.time() - runner.start_time)
 
+    status_str = runner.status if (runner.status and runner.status != "stopped") else "online"
     return {
-        "engine_status": runner.status,
+        "engine_status": status_str,
         "uptime_seconds": uptime,
         "last_check_time": runner.last_check_time,
         "active_monitors_count": active_monitors,
