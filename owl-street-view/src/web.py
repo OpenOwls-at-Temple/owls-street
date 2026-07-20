@@ -955,23 +955,16 @@ for d in possible_frontend_dirs:
         frontend_dir = d
         break
 
-if frontend_dir and os.path.exists(frontend_dir):
-    logger.info(f"Serving frontend static build from: {frontend_dir}")
-    
-    # Mount static assets directory
-    static_assets_path = os.path.join(frontend_dir, "static")
-    if os.path.exists(static_assets_path):
-        app.mount("/static", StaticFiles(directory=static_assets_path), name="static")
-    
-    # Fallback to index.html for client side routing
-    @app.get("/{full_path:path}", response_class=HTMLResponse)
-    def serve_frontend(full_path: str):
-        if full_path.startswith("api") or full_path.startswith("ws"):
-            raise HTTPException(status_code=404)
-        index_file = os.path.join(frontend_dir, "index.html")
-        if os.path.exists(index_file):
-            with open(index_file, "r") as f:
-                return HTMLResponse(content=f.read())
-        return HTMLResponse(content="<h1>Frontend index.html not found!</h1>", status_code=404)
-else:
-    logger.warning("Frontend build directory 'frontend/build' not found. App will run in API-only mode.")
+template_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
+
+@app.get("/", response_class=HTMLResponse)
+def serve_dashboard():
+    """Serves the Owl Street View Trading Dashboard Single Page Application UI."""
+    if frontend_dir and os.path.exists(os.path.join(frontend_dir, "index.html")):
+        with open(os.path.join(frontend_dir, "index.html"), "r") as f:
+            return HTMLResponse(content=f.read())
+    elif os.path.exists(template_path):
+        with open(template_path, "r") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Owl Street View UI Template Not Found!</h1>", status_code=404)
+
