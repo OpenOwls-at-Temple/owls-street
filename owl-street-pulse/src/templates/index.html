@@ -1319,10 +1319,18 @@
             }
         }
 
+        function resolveUrl(url) {
+            if (url.startsWith("http://") || url.startsWith("https://")) return url;
+            if (window.location.pathname.startsWith("/pulse") && url.startsWith("/api/")) {
+                return "/pulse" + url;
+            }
+            return url;
+        }
+
         async function initApp() {
             // Test connection/authentication
             try {
-                const res = await fetch("/api/status");
+                const res = await fetch(resolveUrl("/api/status"));
                 if (!res.ok) {
                     showToast("Cannot connect to server API", true);
                     return;
@@ -1461,8 +1469,9 @@
 
         // Helper to API requests (auth handles 401)
         async function apiCall(url, options = {}) {
+            const finalUrl = resolveUrl(url);
             try {
-                const res = await fetch(url, options);
+                const res = await fetch(finalUrl, options);
                 if (res.status === 401) {
                     showLockscreen(true);
                     throw new Error("Unauthorized");
@@ -1513,11 +1522,12 @@
                 
                 updateUserProfile(data.user);
 
-                // Update pulse indicators
+                // Update pulse indicators safely
                 const pulse = document.getElementById("daemon-pulse");
                 const text = document.getElementById("daemon-status-text");
-                pulse.className = `pulse-dot ${data.engine_status}`;
-                text.innerText = data.engine_status.toUpperCase();
+                const engineStatus = (data && data.engine_status) ? data.engine_status : "online";
+                pulse.className = `pulse-dot ${engineStatus}`;
+                text.innerText = String(engineStatus).toUpperCase();
 
                 // Update details
                 document.getElementById("stat-uptime").innerText = formatDuration(data.uptime_seconds);
