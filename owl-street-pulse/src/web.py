@@ -146,13 +146,17 @@ DB_PATH = os.environ.get("WEB_DB_PATH", "data/alerts.db")
 
 @app.on_event("startup")
 def startup_event():
-    # Start the engine thread immediately on web server startup
-    runner.start(CONFIG_PATH, DB_PATH)
+    try:
+        runner.start(CONFIG_PATH, DB_PATH)
+    except Exception as e:
+        logger.warning(f"Background alert engine runner skipped: {e}")
 
 @app.on_event("shutdown")
 def shutdown_event():
-    # Stop background engine runner
-    runner.stop()
+    try:
+        runner.stop()
+    except Exception:
+        pass
 
 # ----------------- UI Dashboard HTML Endpoint -----------------
 
