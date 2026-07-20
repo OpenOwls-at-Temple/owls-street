@@ -110,16 +110,23 @@ def verify_dashboard_password(request: Request):
 @app.on_event("startup")
 def startup_event():
     config_path = os.environ.get("WEB_CONFIG_PATH", "config/config.yaml")
-    if not os.path.exists(config_path):
-        logger.warning(f"Config file not found at '{config_path}'. Running without Alpaca Client initialized.")
-        return
+    if os.path.exists(config_path):
+        try:
+            from src.config import load_config
+            config = load_config(config_path)
+            init_web_service(config)
+            logger.info(f"Loaded config from '{config_path}' and initialized Alpaca Service.")
+            return
+        except Exception as e:
+            logger.error(f"Error loading configuration from file: {e}", exc_info=True)
+
     try:
-        from src.config import load_config
-        config = load_config(config_path)
+        from src.config import load_config_from_env
+        config = load_config_from_env()
         init_web_service(config)
-        logger.info(f"Loaded config from '{config_path}' and initialized Alpaca Service.")
+        logger.info("Initialized Alpaca Service from environment variables.")
     except Exception as e:
-        logger.error(f"Error loading configuration during startup: {e}", exc_info=True)
+        logger.error(f"Error initializing configuration from env: {e}", exc_info=True)
 
 def init_web_service(config: AppConfig):
     global alpaca_service, dashboard_password, pulse_url, app_config
