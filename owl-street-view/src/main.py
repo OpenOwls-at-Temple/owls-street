@@ -4,6 +4,7 @@ import argparse
 import logging
 from logging.handlers import RotatingFileHandler
 import uvicorn
+from src.web import app
 
 def setup_logging(log_dir: str = "logs"):
     """Configures system-wide logging with both Console and Rotating File outputs."""
