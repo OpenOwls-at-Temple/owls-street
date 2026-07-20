@@ -7,6 +7,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone
 import uvicorn
+from src.web import app
 
 from src.config import load_config
 from src.engine import AlertEngine
