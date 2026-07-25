@@ -129,7 +129,7 @@ def verify_dashboard_password(request: Request):
     if not (password_enabled or google_enabled):
         return True  # Auth is disabled if none are set
         
-    token = request.cookies.get("session_token")
+    token = request.cookies.get("pulse_session_token")
     if token == password:
         return True
         
@@ -189,7 +189,7 @@ def get_auth_config(request: Request):
     if not auth_enabled:
         authorized = True
     else:
-        token = request.cookies.get("session_token")
+        token = request.cookies.get("pulse_session_token")
         if token:
             if password_enabled and token == password:
                 authorized = True
@@ -301,7 +301,7 @@ async def google_callback(request: Request, response: Response, code: str, state
     redirect_target = f"{origin}/"
     res_redirect = RedirectResponse(url=redirect_target)
     res_redirect.set_cookie(
-        key="session_token",
+        key="pulse_session_token",
         value=jwt_token,
         httponly=True,
         samesite="lax",
@@ -322,7 +322,7 @@ def login(payload: dict, response: Response):
     user_password = payload.get("password")
     if user_password == password:
         response.set_cookie(
-            key="session_token",
+            key="pulse_session_token",
             value=password,
             httponly=True,
             samesite="lax",
@@ -335,7 +335,7 @@ def login(payload: dict, response: Response):
 @app.post("/api/auth/logout")
 def logout(response: Response):
     """Logs out the user by deleting cookie."""
-    response.delete_cookie("session_token")
+    response.delete_cookie("pulse_session_token")
     return {"status": "success"}
 
 @app.get("/api/status")
@@ -353,7 +353,7 @@ def get_status(request: Request):
     authorized = False
     user_info = None
     
-    token = request.cookies.get("session_token")
+    token = request.cookies.get("pulse_session_token")
     if not auth_required:
         authorized = True
     elif password and token == password:
