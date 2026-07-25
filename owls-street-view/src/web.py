@@ -320,13 +320,20 @@ def create_session(payload: dict, response: Response):
         if email.lower() not in allowed_emails:
             raise HTTPException(status_code=403, detail=f"Email {email} is not authorized to access this dashboard.")
             
-    import secrets
-    session_token = secrets.token_hex(16)
-    active_sessions.add(session_token)
+    user_name = email.split('@')[0].capitalize()
+    jwt_payload = {
+        "email": email,
+        "name": user_name,
+        "provider": provider,
+        "avatar": f"https://www.gravatar.com/avatar/{hashlib.md5(email.lower().encode()).hexdigest()}?d=mp"
+    }
+    jwt_token = create_jwt(jwt_payload)
+    
+    logger.info(f"Created active session for email: {email} (provider: {provider})")
     
     response.set_cookie(
         key="session_token",
-        value=session_token,
+        value=jwt_token,
         httponly=True,
         samesite="lax",
         max_age=30 * 24 * 3600
