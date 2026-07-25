@@ -427,11 +427,7 @@ export default function App() {
     return (
       <Lockscreen
         onUnlock={handleUnlock}
-        googleEnabled={googleEnabled}
         googleClientId={googleClientId}
-        microsoftEnabled={microsoftEnabled}
-        microsoftClientId={microsoftClientId}
-        passwordEnabled={passwordEnabled}
         theme={theme}
         onToggleTheme={toggleTheme}
       />

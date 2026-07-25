@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Street View — Professional Trading & Options Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lightweight Charts CDN -->
+    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        :root {
+            --bg-app: #0b0f19;
+            --bg-surface: rgba(18, 24, 38, 0.75);
+            --bg-elevated: rgba(30, 41, 59, 0.7);
+            --bg-input: rgba(15, 23, 42, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --border-hover: rgba(56, 189, 248, 0.4);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b581;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --glass-blur: blur(16px);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg-app); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; background-image: radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%), radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.08) 0%, transparent 40%); }
+
+        /* Top Navigation Header */
+        header.top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: var(--bg-surface);
+            backdrop-filter: var(--glass-blur);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+        .brand span.badge-tag {
+            font-size: 10px;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        nav.nav-tabs {
+            display: flex;
+            gap: 6px;
+            background: var(--bg-input);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-btn:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); }
+        .nav-btn.active { color: var(--text-primary); background: var(--bg-elevated); border: 1px solid var(--border-hover); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+        .telemetry-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+        }
+        .telemetry-item { display: flex; flex-direction: column; align-items: flex-end; }
+        .telemetry-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+        .telemetry-value { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--accent-blue); }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            display: inline-block;
+        }
+
+        /* Layout Container */
+        .app-container {
+            padding: 20px 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Card Panels */
+        .glass-card {
+            background: var(--bg-surface);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 20px;
+        }
+
+        /* Chart View Grid */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 340px;
+            gap: 16px;
+            min-height: 620px;
+        }
+
+        /* Ticker / Watchlist Sidebar */
+        .sidebar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 580px;
+            overflow-y: auto;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            margin-bottom: 12px;
+        }
+        .search-input:focus { border-color: var(--accent-blue); }
+
+        .watchlist-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--bg-elevated);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .watchlist-row:hover, .watchlist-row.active {
+            border-color: var(--border-hover);
+            background: rgba(56, 189, 248, 0.08);
+        }
+
+        .ticker-symbol { font-weight: 700; font-size: 13px; }
+        .ticker-name { font-size: 11px; color: var(--text-muted); }
+        .price-pos { color: var(--accent-green); font-family: 'JetBrains Mono', monospace; }
+        .price-neg { color: var(--accent-red); font-family: 'JetBrains Mono', monospace; }
+
+        /* TradingView Chart Container */
+        .chart-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .timeframe-selector {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-input);
+            padding: 3px;
+            border-radius: 6px;
+        }
+        .tf-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tf-btn.active { background: var(--accent-blue); color: #000; }
+
+        #tv-chart-container {
+            width: 100%;
+            height: 520px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        /* Order Panel Form */
+        .order-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .side-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            background: var(--bg-input);
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .side-btn {
+            border: none;
+            padding: 10px;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+        .side-btn.buy { background: var(--accent-green); color: #fff; }
+        .side-btn.sell { background: var(--accent-red); color: #fff; }
+        .side-btn.active { opacity: 1; box-shadow: 0 0 12px rgba(0,0,0,0.4); }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+        .form-control {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+        .btn-submit-order {
+            background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: transform 0.1s;
+        }
+        .btn-submit-order:active { transform: scale(0.98); }
+
+        /* Tables (Screener, Options, Orders) */
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        table.data-table th {
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-align: left;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        table.data-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        table.data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+        /* Screener Controls Header */
+        .screener-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-group { display: flex; gap: 8px; align-items: center; }
+
+        /* Chat Widget Drawer */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 560px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--bg-input);
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-msg {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .chat-msg.user { align-self: flex-end; background: var(--accent-blue); color: #000; font-weight: 500; }
+        .chat-msg.assistant { align-self: flex-start; background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary); }
+
+        .chat-input-bar {
+            display: flex;
+            padding: 12px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            gap: 8px;
+        }
+
+        /* Lockscreen Modal */
+        .lockscreen-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 15, 25, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .lockscreen-modal.active { display: flex; }
+        .lockscreen-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hover);
+            padding: 36px;
+            border-radius: 16px;
+            width: 380px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header & Telemetry Navigation -->
+    <header class="top-bar">
+        <div class="brand">
+            🦉 OWL STREET VIEW <span class="badge-tag">TRADING DASHBOARD</span>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="nav-btn active" onclick="switchTab('chart', this)">📈 Trading & Chart</button>
+            <button class="nav-btn" onclick="switchTab('options', this)">📊 Option Chain Matrix</button>
+            <button class="nav-btn" onclick="switchTab('screener', this)">🔍 Stock Screener</button>
+            <button class="nav-btn" onclick="switchTab('portfolio', this)">💼 Portfolio & Orders</button>
+            <button class="nav-btn" onclick="switchTab('chat', this)">🦉 Owl Speaks Chat</button>
+        </nav>
+
+        <div class="telemetry-bar">
+            <div class="telemetry-item">
+                <span class="telemetry-label">Equity</span>
+                <span id="tel-equity" class="telemetry-value">$0.00</span>
+            </div>
+            <div class="telemetry-item">
+                <span class="telemetry-label">Buying Power</span>
+                <span id="tel-bp" class="telemetry-value">$0.00</span>
+            </div>
+            <div class="telemetry-item">
+                <span class="telemetry-label">Alpaca Mode</span>
+                <span id="tel-mode" class="telemetry-value" style="color: var(--accent-green);">PAPER</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="status-dot"></span>
+                <span style="font-size: 11px; color: var(--text-secondary);">ONLINE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="app-container">
+
+        <!-- 1. CHART & TRADING VIEW -->
+        <div id="tab-chart" class="tab-content active">
+            <div class="chart-grid">
+                
+                <!-- Watchlist Sidebar -->
+                <div class="glass-card" style="margin-bottom: 0;">
+                    <input type="text" id="symbol-search" class="search-input" placeholder="Search Symbol (e.g. AAPL)..." onkeyup="if(event.key==='Enter') selectSymbol(this.value)">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">POPULAR WATCHLIST</div>
+                    <div class="sidebar-list" id="watchlist-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Lightweight Chart -->
+                <div class="glass-card" style="margin-bottom: 0;">
+                    <div class="chart-header">
+                        <div>
+                            <span id="chart-symbol" style="font-size: 20px; font-weight: 700;">AAPL</span>
+                            <span id="chart-price" style="font-size: 18px; margin-left: 10px;" class="price-pos">$0.00</span>
+                            <span id="chart-change" style="font-size: 12px; margin-left: 6px;" class="price-pos">(+0.00%)</span>
+                        </div>
+                        <div class="timeframe-selector">
+                            <button class="tf-btn" onclick="setChartTimeframe('1Min', this)">1m</button>
+                            <button class="tf-btn" onclick="setChartTimeframe('5Min', this)">5m</button>
+                            <button class="tf-btn" onclick="setChartTimeframe('15Min', this)">15m</button>
+                            <button class="tf-btn" onclick="setChartTimeframe('1Hour', this)">1h</button>
+                            <button class="tf-btn active" onclick="setChartTimeframe('1Day', this)">1D</button>
+                        </div>
+                    </div>
+                    <div id="tv-chart-container"></div>
+                </div>
+
+                <!-- Quick Order Submission Panel -->
+                <div class="glass-card" style="margin-bottom: 0;">
+                    <h3 style="font-size: 14px; margin-bottom: 14px; color: var(--text-primary);">Submit Order</h3>
+                    <form id="order-form" onsubmit="submitOrder(event)" class="order-panel">
+                        <div class="side-toggle">
+                            <button type="button" id="side-buy-btn" class="side-btn buy active" onclick="setOrderSide('buy')">BUY</button>
+                            <button type="button" id="side-sell-btn" class="side-btn sell" onclick="setOrderSide('sell')">SELL</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Order Type</label>
+                            <select id="order-type" class="form-control" onchange="toggleOrderFields()">
+                                <option value="market">Market</option>
+                                <option value="limit">Limit</option>
+                                <option value="stop">Stop</option>
+                                <option value="stop_limit">Stop Limit</option>
+                                <option value="trailing_stop">Trailing Stop</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Quantity (Shares)</label>
+                            <input type="number" id="order-qty" class="form-control" value="1" min="1" step="1" required>
+                        </div>
+
+                        <div class="form-group" id="limit-price-group" style="display: none;">
+                            <label class="form-label">Limit Price ($)</label>
+                            <input type="number" id="order-limit-price" class="form-control" step="0.01">
+                        </div>
+
+                        <div class="form-group" id="stop-price-group" style="display: none;">
+                            <label class="form-label">Stop Price ($)</label>
+                            <input type="number" id="order-stop-price" class="form-control" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Time In Force</label>
+                            <select id="order-tif" class="form-control">
+                                <option value="day">Day</option>
+                                <option value="gtc">Good Til Canceled (GTC)</option>
+                                <option value="ioc">Immediate or Cancel (IOC)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" id="btn-submit-order" class="btn-submit-order">PLACE BUY ORDER</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 2. OPTION CHAIN MATRIX -->
+        <div id="tab-options" class="tab-content">
+            <div class="glass-card">
+                <div class="screener-bar">
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <input type="text" id="opt-symbol" class="form-control" value="AAPL" placeholder="Underlying Ticker..." style="width: 160px; font-weight: 700;">
+                        <select id="opt-expiration" class="form-control" onchange="loadOptionChainMatrix()" style="width: 180px;">
+                            <option value="">Select Expiration...</option>
+                        </select>
+                        <button class="nav-btn active" onclick="loadOptionExpirations()">Load Chain</button>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="options-matrix-table">
+                        <thead>
+                            <tr>
+                                <th style="color: var(--accent-green);">CALLS Last</th>
+                                <th style="color: var(--accent-green);">Bid/Ask</th>
+                                <th style="color: var(--accent-green);">IV%</th>
+                                <th style="text-align: center; background: rgba(56,189,248,0.15);">STRIKE</th>
+                                <th style="color: var(--accent-red);">PUTS Last</th>
+                                <th style="color: var(--accent-red);">Bid/Ask</th>
+                                <th style="color: var(--accent-red);">IV%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="options-matrix-body">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">Select an underlying ticker and expiration date to load the chain matrix.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. STOCK SCREENER -->
+        <div id="tab-screener" class="tab-content">
+            <div class="glass-card">
+                <div class="screener-bar">
+                    <div class="filter-group">
+                        <select id="screener-preset" class="form-control" onchange="runScreenerScan()">
+                            <option value="default">Stock Screener</option>
+                            <option value="gainers">Top Gainers (>3%)</option>
+                            <option value="losers">Top Losers (<-3%)</option>
+                            <option value="high_volume">High Volume</option>
+                        </select>
+                        <select id="screener-universe" class="form-control" onchange="runScreenerScan()">
+                            <option value="liquid">Liquid Universe & ETFs</option>
+                            <option value="tradable">All US Equities</option>
+                        </select>
+                    </div>
+                    <button class="nav-btn active" onclick="runScreenerScan()">Run Screener</button>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="screener-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Exchange</th>
+                                <th>Last Price</th>
+                                <th>Change %</th>
+                                <th>Volume</th>
+                                <th>Market Cap</th>
+                                <th>P/E</th>
+                            </tr>
+                        </thead>
+                        <tbody id="screener-body">
+                            <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">Click 'Run Screener' to scan market snapshots.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. PORTFOLIO & ORDERS -->
+        <div id="tab-portfolio" class="tab-content">
+            <div class="glass-card">
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--accent-blue);">Open Positions</h3>
+                <div style="overflow-x: auto; margin-bottom: 30px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Qty</th>
+                                <th>Avg Entry</th>
+                                <th>Current Price</th>
+                                <th>Market Value</th>
+                                <th>Unrealized P/L</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="positions-body">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">No open positions.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--accent-blue);">Order History</h3>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Type</th>
+                                <th>Qty</th>
+                                <th>Status</th>
+                                <th>Submitted At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-body">
+                            <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No recent orders.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. OWL SPEAKS CHAT -->
+        <div id="tab-chat" class="tab-content">
+            <div class="glass-card">
+                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--accent-blue);">🦉 Owl Speaks AI Market Assistant</h3>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-msg assistant">
+                            Hello! I am <strong>Owl Speaks</strong>, your AI market assistant. Ask me anything about stock technicals, indicators, market trends, or option strategies!
+                        </div>
+                    </div>
+                    <form onsubmit="sendChatMessage(event)" class="chat-input-bar">
+                        <input type="text" id="chat-input" class="search-input" placeholder="Ask Owl Speaks a question..." style="margin-bottom: 0;">
+                        <button type="submit" class="nav-btn active">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Auth Lockscreen Overlay -->
+    <div class="lockscreen-modal" id="auth-lockscreen">
+        <div class="lockscreen-box">
+            <h2 style="margin-bottom: 8px;">🦉 Owl Street View</h2>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Dashboard Password Protected</p>
+            <form onsubmit="submitLogin(event)">
+                <input type="password" id="login-password" class="search-input" placeholder="Enter Password..." required>
+                <button type="submit" class="btn-submit-order" style="width: 100%;">UNLOCK DASHBOARD</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Frontend Scripting Logic -->
+    <script>
+        let currentSymbol = "AAPL";
+        let chartTimeframe = "1Day";
+        let activeOrderSide = "buy";
+        let chartInstance = null;
+        let candleSeries = null;
+
+        const defaultWatchlist = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META", "GOOGL", "SPY", "QQQ", "BTC/USD"];
+
+        window.onload = function() {
+            initTradingChart();
+            renderWatchlist();
+            fetchAccountTelemetry();
+            loadPositionsAndOrders();
+            selectSymbol("AAPL");
+        };
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+            
+            btn.classList.add("active");
+            document.getElementById(`tab-${tabId}`).classList.add("active");
+
+            if(tabId === 'portfolio') loadPositionsAndOrders();
+            if(tabId === 'screener') runScreenerScan();
+            if(tabId === 'options') loadOptionExpirations();
+        }
+
+        // --- Account Telemetry ---
+        async function fetchAccountTelemetry() {
+            try {
+                const res = await fetch("/api/account");
+                if (res.status === 401) {
+                    document.getElementById("auth-lockscreen").classList.add("active");
+                    return;
+                }
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById("tel-equity").innerText = `$${Number(data.equity || 0).toLocaleString()}`;
+                    document.getElementById("tel-bp").innerText = `$${Number(data.buying_power || 0).toLocaleString()}`;
+                }
+            } catch(e) {}
+        }
+
+        async function submitLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById("login-password").value;
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: pass })
+            });
+            if (res.ok) {
+                document.getElementById("auth-lockscreen").classList.remove("active");
+                fetchAccountTelemetry();
+            } else {
+                alert("Invalid Password");
+            }
+        }
+
+        // --- Watchlist Sidebar ---
+        function renderWatchlist() {
+            const container = document.getElementById("watchlist-container");
+            container.innerHTML = "";
+            defaultWatchlist.forEach(sym => {
+                const row = document.createElement("div");
+                row.className = `watchlist-row ${sym === currentSymbol ? 'active' : ''}`;
+                row.onclick = () => selectSymbol(sym);
+                row.innerHTML = `
+                    <div>
+                        <div class="ticker-symbol">${sym}</div>
+                        <div class="ticker-name">Equities / ETF</div>
+                    </div>
+                    <div class="price-pos">$--.--</div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        async function selectSymbol(sym) {
+            currentSymbol = sym.toUpperCase();
+            document.getElementById("chart-symbol").innerText = currentSymbol;
+            loadChartBars();
+        }
+
+        // --- TradingView Chart ---
+        function initTradingChart() {
+            const container = document.getElementById("tv-chart-container");
+            container.innerHTML = "";
+            chartInstance = LightweightCharts.createChart(container, {
+                layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#94a3b8' },
+                grid: { vertLines: { color: 'rgba(255, 255, 255, 0.05)' }, horzLines: { color: 'rgba(255, 255, 255, 0.05)' } },
+                timeScale: { borderColor: 'rgba(255, 255, 255, 0.1)' }
+            });
+            candleSeries = chartInstance.addCandlestickSeries({
+                upColor: '#10b581', downColor: '#ef4444', borderVisible: false, wickUpColor: '#10b581', wickDownColor: '#ef4444'
+            });
+        }
+
+        async function loadChartBars() {
+            try {
+                const res = await fetch(`/api/bars/${currentSymbol}?timeframe=${chartTimeframe}&limit=150`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.bars && data.bars.length > 0) {
+                        const formatted = data.bars.map(b => ({
+                            time: b.t ? b.t.substring(0, 10) : b.time,
+                            open: b.o, high: b.h, low: b.l, close: b.c
+                        }));
+                        candleSeries.setData(formatted);
+                        const lastBar = formatted[formatted.length - 1];
+                        document.getElementById("chart-price").innerText = `$${lastBar.close.toFixed(2)}`;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function setChartTimeframe(tf, btn) {
+            document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            chartTimeframe = tf;
+            loadChartBars();
+        }
+
+        // --- Orders ---
+        function setOrderSide(side) {
+            activeOrderSide = side;
+            document.getElementById("side-buy-btn").className = `side-btn buy ${side === 'buy' ? 'active' : ''}`;
+            document.getElementById("side-sell-btn").className = `side-btn sell ${side === 'sell' ? 'active' : ''}`;
+            document.getElementById("btn-submit-order").innerText = `PLACE ${side.toUpperCase()} ORDER`;
+        }
+
+        function toggleOrderFields() {
+            const type = document.getElementById("order-type").value;
+            document.getElementById("limit-price-group").style.display = (type === 'limit' || type === 'stop_limit') ? 'flex' : 'none';
+            document.getElementById("stop-price-group").style.display = (type === 'stop' || type === 'stop_limit') ? 'flex' : 'none';
+        }
+
+        async function submitOrder(e) {
+            e.preventDefault();
+            const payload = {
+                symbol: currentSymbol,
+                side: activeOrderSide,
+                type: document.getElementById("order-type").value,
+                qty: parseFloat(document.getElementById("order-qty").value),
+                time_in_force: document.getElementById("order-tif").value,
+                limit_price: parseFloat(document.getElementById("order-limit-price").value) || undefined,
+                stop_price: parseFloat(document.getElementById("order-stop-price").value) || undefined
+            };
+            const res = await fetch("/api/orders/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert("Order Placed Successfully!");
+                loadPositionsAndOrders();
+            } else {
+                const err = await res.json();
+                alert(`Order Error: ${err.detail || 'Failed'}`);
+            }
+        }
+
+        async function loadPositionsAndOrders() {
+            try {
+                const posRes = await fetch("/api/positions");
+                if (posRes.ok) {
+                    const pos = await posRes.json();
+                    const tbody = document.getElementById("positions-body");
+                    tbody.innerHTML = pos.length ? pos.map(p => `
+                        <tr>
+                            <td style="font-weight: 700;">${p.symbol}</td>
+                            <td>${p.qty}</td>
+                            <td>$${Number(p.avg_entry_price).toFixed(2)}</td>
+                            <td>$${Number(p.current_price).toFixed(2)}</td>
+                            <td>$${Number(p.market_value).toFixed(2)}</td>
+                            <td class="${p.unrealized_pl >= 0 ? 'price-pos' : 'price-neg'}">$${Number(p.unrealized_pl).toFixed(2)}</td>
+                            <td><button class="tf-btn" style="background: var(--accent-red); color: #fff;" onclick="closePosition('${p.symbol}')">Close</button></td>
+                        </tr>
+                    `).join('') : `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">No open positions.</td></tr>`;
+                }
+
+                const ordRes = await fetch("/api/orders");
+                if (ordRes.ok) {
+                    const ord = await ordRes.json();
+                    const tbody = document.getElementById("orders-body");
+                    tbody.innerHTML = ord.length ? ord.map(o => `
+                        <tr>
+                            <td style="font-family: monospace;">${o.id.substring(0, 8)}...</td>
+                            <td style="font-weight: 700;">${o.symbol}</td>
+                            <td style="font-weight: 700; color: ${o.side === 'buy' ? 'var(--accent-green)' : 'var(--accent-red)'};">${o.side.toUpperCase()}</td>
+                            <td>${o.type}</td>
+                            <td>${o.qty}</td>
+                            <td><span class="badge-tag">${o.status}</span></td>
+                            <td style="font-size: 11px; color: var(--text-muted);">${o.submitted_at ? o.submitted_at.substring(0, 19) : ''}</td>
+                            <td><button class="tf-btn" style="background: var(--bg-input);" onclick="cancelOrder('${o.id}')">Cancel</button></td>
+                        </tr>
+                    `).join('') : `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No recent orders.</td></tr>`;
+                }
+            } catch(e) {}
+        }
+
+        // --- Screener ---
+        async function runScreenerScan() {
+            const preset = document.getElementById("screener-preset").value;
+            const universe = document.getElementById("screener-universe").value;
+            const res = await fetch("/api/screener", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ universe: universe, preset: preset, limit: 50 })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById("screener-body");
+                tbody.innerHTML = (data.rows && data.rows.length) ? data.rows.map(r => `
+                    <tr onclick="selectSymbol('${r.symbol}'); switchTab('chart', document.querySelectorAll('.nav-btn')[0]);" style="cursor: pointer;">
+                        <td style="font-weight: 700; color: var(--accent-blue);">${r.symbol}</td>
+                        <td>${r.name || ''}</td>
+                        <td>${r.exchange || ''}</td>
+                        <td style="font-family: monospace;">$${Number(r.last || 0).toFixed(2)}</td>
+                        <td class="${r.change_pct >= 0 ? 'price-pos' : 'price-neg'}">${r.change_pct ? r.change_pct.toFixed(2) : '0.00'}%</td>
+                        <td>${Number(r.volume || 0).toLocaleString()}</td>
+                        <td>${r.market_cap ? '$' + (r.market_cap / 1e9).toFixed(2) + 'B' : '-'}</td>
+                        <td>${r.pe ? r.pe.toFixed(1) : '-'}</td>
+                    </tr>
+                `).join('') : `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No results matching filters.</td></tr>`;
+            }
+        }
+
+        // --- Option Chain ---
+        async function loadOptionExpirations() {
+            const sym = document.getElementById("opt-symbol").value.trim().toUpperCase();
+            const res = await fetch(`/api/option-expirations/${sym}`);
+            if (res.ok) {
+                const dates = await res.json();
+                const sel = document.getElementById("opt-expiration");
+                sel.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+                if (dates.length > 0) loadOptionChainMatrix();
+            }
+        }
+
+        async function loadOptionChainMatrix() {
+            const sym = document.getElementById("opt-symbol").value.trim().toUpperCase();
+            const exp = document.getElementById("opt-expiration").value;
+            if (!exp) return;
+            const res = await fetch(`/api/option-chain-matrix/${sym}?expiration_date=${exp}&wing=16`);
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById("options-matrix-body");
+                tbody.innerHTML = (data.matrix && data.matrix.length) ? data.matrix.map(r => `
+                    <tr>
+                        <td class="price-pos">$${r.call_last ? r.call_last.toFixed(2) : '-'}</td>
+                        <td style="font-size: 11px; color: var(--text-muted);">${r.call_bid || '-'}/${r.call_ask || '-'}</td>
+                        <td>${r.call_iv ? (r.call_iv * 100).toFixed(1) + '%' : '-'}</td>
+                        <td style="text-align: center; font-weight: 700; background: rgba(56,189,248,0.1);">$${r.strike.toFixed(2)}</td>
+                        <td class="price-neg">$${r.put_last ? r.put_last.toFixed(2) : '-'}</td>
+                        <td style="font-size: 11px; color: var(--text-muted);">${r.put_bid || '-'}/${r.put_ask || '-'}</td>
+                        <td>${r.put_iv ? (r.put_iv * 100).toFixed(1) + '%' : '-'}</td>
+                    </tr>
+                `).join('') : `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">No option contracts found for ${exp}.</td></tr>`;
+            }
+        }
+
+        // --- Chat Assistant ---
+        async function sendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById("chat-input");
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const container = document.getElementById("chat-messages");
+            container.innerHTML += `<div class="chat-msg user">${text}</div>`;
+            input.value = "";
+            container.scrollTop = container.scrollHeight;
+
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text, symbol: currentSymbol })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                container.innerHTML += `<div class="chat-msg assistant">${data.response || data.message || 'Received.'}</div>`;
+            } else {
+                container.innerHTML += `<div class="chat-msg assistant" style="color: var(--accent-red);">Failed to reach Owl Speaks agent.</div>`;
+            }
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+</html>
