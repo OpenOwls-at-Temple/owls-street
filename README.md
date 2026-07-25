@@ -1,6 +1,6 @@
-# Owl Street Trading & Alerting Ecosystem 🦉📈
+# Owls Street Trading & Alerting Ecosystem 🦉📈
 
-Welcome to the **Owl Street** monorepo—a production-grade, self-hosted suite of tools for real-time asset market monitoring, algorithmic alerting, technical indicators calculation, options analysis, and order management.
+Welcome to the **Owls Street** monorepo—a production-grade, self-hosted suite of tools for real-time asset market monitoring, algorithmic alerting, technical indicators calculation, options analysis, and order management.
 
 The ecosystem is split into two primary backend-backed services and a modular React frontend dashboard:
 
@@ -22,7 +22,7 @@ graph TD
         Ollama[Local Ollama LLM Service]
     end
 
-    subgraph "Owl Street Pulse (Alert Engine)"
+    subgraph "Owls Street Pulse (Alert Engine)"
         PulseBE[FastAPI Web Server :8000]
         Engine[Alert Check Loop / Worker]
         PulseDB[(SQLite State DB: alerts.db)]
@@ -30,7 +30,7 @@ graph TD
         Notifiers[Notifiers: Discord / Slack / Telegram]
     end
 
-    subgraph "Owl Street View (Dashboard)"
+    subgraph "Owls Street View (Dashboard)"
         ViewBE[FastAPI Proxy Server :8080]
         ReactFE[React SPA Client]
     end

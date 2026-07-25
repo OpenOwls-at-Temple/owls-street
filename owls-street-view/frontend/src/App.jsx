@@ -448,7 +448,7 @@ export default function App() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </div>
-          <span style={sidebarStyles.logoText}>Owl Street View</span>
+          <span style={sidebarStyles.logoText}>Owls Street View</span>
         </div>
 
         <ul style={sidebarStyles.navLinks}>
@@ -686,7 +686,7 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: pulseOnline ? 'var(--success)' : 'var(--warning)', boxShadow: pulseOnline ? '0 0 8px var(--success)' : '0 0 8px var(--warning)' }}></span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-                    Owl Street Pulse Integration {pulseOnline ? '(Online)' : '(Offline)'}
+                    Owls Street Pulse Integration {pulseOnline ? '(Online)' : '(Offline)'}
                   </span>
                 </div>
                 {pulseOnline && (
@@ -700,7 +700,7 @@ export default function App() {
               {pulseOnline ? (
                 <iframe
                   src={`${pulseUrl}${pulseUrl.includes('?') ? '&' : '?'}theme=${theme}`}
-                  title="Owl Street Pulse Alerts System"
+                  title="Owls Street Pulse Alerts System"
                   style={{ flex: 1, border: 'none', width: '100%', height: '100%', background: 'transparent' }}
                   sandbox="allow-same-origin allow-scripts allow-forms allow-downloads"
                 />
@@ -718,7 +718,7 @@ export default function App() {
                     The owls got tired delivering the alerts...
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', fontSize: 15, maxWidth: 460, margin: '0 0 28px 0', lineHeight: 1.6 }}>
-                    They've taken a quick power nap! Once you boot up the Owl Street Pulse service (run <code>./run.sh</code> inside <code>owls-street-pulse</code> folder), they will be right back at work.
+                    They've taken a quick power nap! Once you boot up the Owls Street Pulse service (run <code>./run.sh</code> inside <code>owls-street-pulse</code> folder), they will be right back at work.
                   </p>
                   <button
                     type="button"

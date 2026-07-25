@@ -28,7 +28,7 @@ from alpaca.data.live.option import OptionDataStream
 logger = logging.getLogger(__name__)
 
 # FastAPI app
-app = FastAPI(title="Owl Street View API", version="1.0.0")
+app = FastAPI(title="Owls Street View API", version="1.0.0")
 
 # Setup CORS (allows local React dev servers on 3000 and 5173)
 app.add_middleware(
@@ -676,7 +676,7 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 async def proxy_chat(payload: ChatRequest, request: Request):
-    """Proxies chat request to the Owl Street Pulse backend, passing authorization cookie."""
+    """Proxies chat request to the Owls Street Pulse backend, passing authorization cookie."""
     # Ensure authorized
     verify_dashboard_password(request)
     
@@ -707,7 +707,7 @@ async def proxy_chat(payload: ChatRequest, request: Request):
             return response.json()
         except httpx.RequestError as e:
             logger.error(f"Failed to reach Pulse backend for chat: {e}")
-            raise HTTPException(status_code=503, detail="Owl Street Pulse alert system backend is currently offline")
+            raise HTTPException(status_code=503, detail="Owls Street Pulse alert system backend is currently offline")
         except HTTPException:
             raise
         except Exception as e:

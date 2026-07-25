@@ -1,4 +1,4 @@
-# Owl Street Pulse 🚨
+# Owls Street Pulse 🚨
 
 A production-grade, highly reliable, and easily configurable asset alert system built in Python. It integrates with the **Alpaca API** to fetch market data, calculates key technical indicators, and dispatches real-time alerts to pluggable destination channels (**Discord**, **Slack**, **Telegram**, and **Console**).
 

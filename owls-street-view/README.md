@@ -1,6 +1,6 @@
-# Owl Street View
+# Owls Street View
 
-A free, self-hosted trading dashboard built with **alpaca-py** (FastAPI backend) and **React** (frontend), designed with a high-fidelity glassmorphic dark theme inspired by **Owl Street Pulse**.
+A free, self-hosted trading dashboard built with **alpaca-py** (FastAPI backend) and **React** (frontend), designed with a high-fidelity glassmorphic dark theme inspired by **Owls Street Pulse**.
 
 Serves both backend API endpoints and compiled static frontend assets from a single unified server.
 
@@ -97,5 +97,5 @@ owls-street-view/
 | GET | `/api/option-expirations/{underlying}` | List active contract expirations |
 | GET | `/api/option-chain-matrix/{underlying}` | Fetchpaired call/put chain matrix |
 | POST | `/api/screener` | Run stock fundamentals screener |
-| POST | `/api/chat` | Proxies chat request to the Owl Street Pulse backend |
+| POST | `/api/chat` | Proxies chat request to the Owls Street Pulse backend |
 | WS | `/ws/quotes` | Subcribe to real-time quotes WebSocket |

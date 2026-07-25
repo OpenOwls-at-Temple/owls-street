@@ -1,5 +1,5 @@
 """
-Vercel-specific lightweight entrypoint for Owl Street Pulse.
+Vercel-specific lightweight entrypoint for Owls Street Pulse.
 
 The full Pulse alert engine requires a persistent server with writable filesystem
 (threading, SQLite, file-based config). This module provides a Vercel-compatible
@@ -20,7 +20,7 @@ PULSE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PULSE_ROOT not in sys.path:
     sys.path.insert(0, PULSE_ROOT)
 
-app = FastAPI(title="Owl Street Pulse API (Serverless)", version="1.0.0")
+app = FastAPI(title="Owls Street Pulse API (Serverless)", version="1.0.0")
 
 # Setup CORS
 app.add_middleware(
@@ -33,7 +33,7 @@ app.add_middleware(
 
 SERVERLESS_MSG = (
     "This endpoint is not available in serverless mode. "
-    "The Owl Street Pulse alert engine requires a persistent server. "
+    "The Owls Street Pulse alert engine requires a persistent server. "
     "Please deploy with Docker or a VPS for full functionality."
 )
 
@@ -46,7 +46,7 @@ def get_dashboard():
     template_path = os.path.join(PULSE_ROOT, "src", "templates", "index.html")
     if not os.path.exists(template_path):
         return HTMLResponse(
-            content="<h1>Owl Street Pulse — Template not found</h1>"
+            content="<h1>Owls Street Pulse — Template not found</h1>"
             "<p>The dashboard template (src/templates/index.html) was not included in the deployment.</p>",
             status_code=404,
         )

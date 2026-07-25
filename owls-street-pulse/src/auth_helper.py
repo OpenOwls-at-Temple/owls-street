@@ -187,7 +187,7 @@ MOCK_GOOGLE_LOGIN_HTML = """
         </div>
         <div class="header">
             <h1>Sign in</h1>
-            <p>to continue to Owl Street App</p>
+            <p>to continue to Owls Street App</p>
         </div>
         <div class="alert-demo">
             <strong>Demonstration Mode:</strong> Enter any Google email and name below to simulate authentication.

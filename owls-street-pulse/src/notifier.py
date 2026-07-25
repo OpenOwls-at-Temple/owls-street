@@ -79,7 +79,7 @@ class AlertNotifier:
     ):
         try:
             payload = {
-                "username": "Owl Street Pulse",
+                "username": "Owls Street Pulse",
                 "avatar_url": "https://raw.githubusercontent.com/google/material-design-icons/master/png/action/trending_up/materialicons/48dp/2x/baseline_trending_up_black_48dp.png",
                 "embeds": [
                     {
@@ -108,7 +108,7 @@ class AlertNotifier:
     ):
         try:
             payload = {
-                "text": f"🚨 [Owl Street Pulse] Alert triggered for {symbol}: {condition_str}",
+                "text": f"🚨 [Owls Street Pulse] Alert triggered for {symbol}: {condition_str}",
                 "blocks": [
                     {
                         "type": "header",

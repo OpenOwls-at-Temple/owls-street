@@ -35,7 +35,7 @@ monitors: []
 def test_get_dashboard():
     response = client.get("/")
     assert response.status_code == 200
-    assert "Owl Street Pulse" in response.text
+    assert "Owls Street Pulse" in response.text
 
 def test_get_status_no_auth(tmp_path, mock_config_path):
     # Overwrite configuration path constants directly to avoid mock path validation exceptions

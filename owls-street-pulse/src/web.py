@@ -86,7 +86,7 @@ class BackgroundEngineRunner:
 runner = BackgroundEngineRunner()
 
 # Create FastAPI app
-app = FastAPI(title="Owl Street Pulse API", version="1.0.0")
+app = FastAPI(title="Owls Street Pulse API", version="1.0.0")
 
 # Setup CORS
 app.add_middleware(

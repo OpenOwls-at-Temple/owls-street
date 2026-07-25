@@ -37,7 +37,7 @@ def setup_logging(log_dir: str = "logs"):
 
 def main():
     # Parse arguments
-    parser = argparse.ArgumentParser(description="Owl Street View Trading Dashboard")
+    parser = argparse.ArgumentParser(description="Owls Street View Trading Dashboard")
     parser.add_argument(
         "--config",
         default="config/config.yaml",
@@ -60,7 +60,7 @@ def main():
     setup_logging()
     logger = logging.getLogger("owls-street-view")
 
-    logger.info("Initializing Owl Street View Trading Dashboard...")
+    logger.info("Initializing Owls Street View Trading Dashboard...")
 
     # Guide user if configuration file is missing
     if not os.path.exists(args.config):

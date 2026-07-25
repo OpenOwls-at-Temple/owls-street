@@ -57,7 +57,7 @@ def main():
     signal.signal(signal.SIGTERM, handle_shutdown_signal)
 
     # Parse arguments
-    parser = argparse.ArgumentParser(description="Owl Street Pulse Alert System")
+    parser = argparse.ArgumentParser(description="Owls Street Pulse Alert System")
     parser.add_argument(
         "--config",
         default="config/config.yaml",
@@ -90,7 +90,7 @@ def main():
     setup_logging()
     logger = logging.getLogger("owls-street-pulse")
 
-    logger.info("Initializing Owl Street Pulse Alert System...")
+    logger.info("Initializing Owls Street Pulse Alert System...")
 
     # Guide user if configuration file is missing
     if not os.path.exists(args.config):
