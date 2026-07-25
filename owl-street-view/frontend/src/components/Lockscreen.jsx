@@ -19,36 +19,11 @@ const decodeJwt = (token) => {
 
 export default function Lockscreen({
   onUnlock,
-  googleEnabled,
   googleClientId,
-  microsoftEnabled,
-  microsoftClientId,
-  passwordEnabled = true,
   theme,
   onToggleTheme
 }) {
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    setError('');
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-      if (res.ok) {
-        onUnlock();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setError(err.detail || 'Invalid Password');
-      }
-    } catch (e) {
-      setError('Connection failed');
-    }
-  };
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -71,77 +46,9 @@ export default function Lockscreen({
     }
   };
 
-
-
-  const handleMicrosoftLogin = async () => {
-    setError('');
-    try {
-      const { PublicClientApplication } = await import("@azure/msal-browser");
-      
-      const msalConfig = {
-        auth: {
-          clientId: microsoftClientId || "mock",
-          authority: "https://login.microsoftonline.com/common",
-          redirectUri: window.location.origin
-        },
-        cache: {
-          cacheLocation: "sessionStorage",
-          storeAuthStateInCookie: false
-        }
-      };
-      
-      if (microsoftClientId === "mock") {
-        const email = prompt("Enter Microsoft Mock Email:", "test@gmail.com");
-        if (!email) return;
-        const res = await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, provider: 'microsoft' })
-        });
-        if (res.ok) {
-          onUnlock();
-        } else {
-          const err = await res.json().catch(() => ({}));
-          setError(err.detail || 'Simulated Microsoft Auth failed');
-        }
-        return;
-      }
-      
-      const msalInstance = new PublicClientApplication(msalConfig);
-      await msalInstance.initialize();
-      
-      const loginResponse = await msalInstance.loginPopup({
-        scopes: ["user.read", "openid", "profile"]
-      });
-      
-      const email = loginResponse.account?.username;
-      if (!email) {
-        setError('Failed to extract email from Microsoft account');
-        return;
-      }
-      
-      const res = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, provider: 'microsoft' })
-      });
-      
-      if (res.ok) {
-        onUnlock();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setError(err.detail || 'Microsoft authentication failed');
-      }
-      
-    } catch (err) {
-      console.error("Microsoft login error:", err);
-      setError(err.message || 'Microsoft login failed');
-    }
-  };
-
   /* global google */
   useEffect(() => {
-    if (googleEnabled && googleClientId && googleClientId !== "mock" && window.google) {
+    if (googleClientId && googleClientId !== "mock" && window.google) {
       try {
         window.google.accounts.id.initialize({
           client_id: googleClientId,
@@ -179,7 +86,7 @@ export default function Lockscreen({
           { 
             theme: "outline", 
             size: "large",
-            text: "signin_with",
+            text: "continue_with",
             shape: "rectangular",
             width: 320
           }
@@ -188,7 +95,7 @@ export default function Lockscreen({
         console.error("Failed to initialize Google Identity Services:", err);
       }
     }
-  }, [googleEnabled, googleClientId]);
+  }, [googleClientId]);
 
   return (
     <div style={styles.overlay}>
@@ -220,66 +127,26 @@ export default function Lockscreen({
         </div>
         
         <p style={styles.subtitle}>
-          {passwordEnabled 
-            ? 'Enter password or sign in using SSO to unlock trading dashboard' 
-            : 'Sign in using SSO to unlock trading dashboard'}
+          Sign in with Google to unlock trading dashboard
         </p>
 
-        {passwordEnabled && (
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              placeholder="••••••••"
-              autoFocus
-            />
-            <button type="submit" style={styles.button}>Unlock Dashboard</button>
-          </form>
-        )}
-
-        {passwordEnabled && (googleEnabled || microsoftEnabled) && (
-          <div style={styles.divider}>
-            <span style={styles.dividerLine}></span>
-            <span style={styles.dividerText}>or</span>
-            <span style={styles.dividerLine}></span>
-          </div>
-        )}
-
-        {(googleEnabled || microsoftEnabled) && (
-          <div style={styles.ssoContainer}>
-            {googleEnabled && googleClientId === "mock" && (
-              <button onClick={handleGoogleLogin} style={styles.googleButton}>
-                <svg viewBox="0 0 24 24" width="18" height="18" style={{ marginRight: 4 }}>
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                Sign in with Google
-              </button>
-            )}
-            {googleEnabled && googleClientId !== "mock" && (
-              <div id="google-gsi-btn" style={{ display: 'flex', justifyContent: 'center', width: '100%', minHeight: 44 }}></div>
-            )}
-            {microsoftEnabled && (
-              <button onClick={handleMicrosoftLogin} style={styles.microsoftButton}>
-                <svg viewBox="0 0 23 23" width="18" height="18" style={{ marginRight: 8 }}>
-                  <rect x="0" y="0" width="10" height="10" fill="#f25022" />
-                  <rect x="11" y="0" width="10" height="10" fill="#7fba00" />
-                  <rect x="0" y="11" width="10" height="10" fill="#00a4ef" />
-                  <rect x="11" y="11" width="10" height="10" fill="#ffb900" />
-                </svg>
-                Sign in with Microsoft
-              </button>
-            )}
-          </div>
-        )}
+        <div style={styles.ssoContainer}>
+          {googleClientId === "mock" ? (
+            <button onClick={handleGoogleLogin} style={styles.googleButton}>
+              <svg viewBox="0 0 24 24" width="18" height="18" style={{ marginRight: 4 }}>
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              Continue with Google
+            </button>
+          ) : (
+            <div id="google-gsi-btn" style={{ display: 'flex', justifyContent: 'center', width: '100%', minHeight: 44 }}></div>
+          )}
+        </div>
 
         {error && <p style={styles.error}>{error}</p>}
-
-        {/* SSO buttons are rendered dynamically above based on server-side enablement */}
       </div>
     </div>
   );
