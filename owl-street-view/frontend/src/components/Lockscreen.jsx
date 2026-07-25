@@ -50,25 +50,9 @@ export default function Lockscreen({
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setError('');
-    const email = prompt("Enter Google Mock Email:", "test@gmail.com");
-    if (!email) return;
-    try {
-      const res = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, provider: 'google' })
-      });
-      if (res.ok) {
-        onUnlock();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setError(err.detail || 'Simulated Google Auth failed');
-      }
-    } catch (e) {
-      setError('Connection failed');
-    }
+    window.location.href = '/api/auth/google/login';
   };
 
 
