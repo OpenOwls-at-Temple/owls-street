@@ -1,12 +1,12 @@
-# Owl Street Trading & Alerting Ecosystem 🦉📈
+# Owls Street Trading & Alerting Ecosystem 🦉📈
 
-Welcome to the **Owl Street** monorepo—a production-grade, self-hosted suite of tools for real-time asset market monitoring, algorithmic alerting, technical indicators calculation, options analysis, and order management.
+Welcome to the **Owls Street** monorepo—a production-grade, self-hosted suite of tools for real-time asset market monitoring, algorithmic alerting, technical indicators calculation, options analysis, and order management.
 
 The ecosystem is split into two primary backend-backed services and a modular React frontend dashboard:
 
-1. **[owl-street-pulse](./owl-street-pulse)** 🚨: An asset checking and real-time alert engine (FastAPI + SQLite + background worker) that dispatches notifications to Discord, Slack, Telegram, and System Console. It also hosts the central **Owl Speaks** Ollama-based chat agent.
-2. **[owl-street-view](./owl-street-view)** 💻: A high-fidelity trading dashboard consisting of a FastAPI proxy/API backend and a React single-page application.
-3. **Screener Component** 🔍: A premium stock screener integrated directly into the `owl-street-view` frontend and backend, merging Alpaca real-time market snapshots with fundamental ratios from Financial Modeling Prep (FMP).
+1. **[owls-street-pulse](./owls-street-pulse)** 🚨: An asset checking and real-time alert engine (FastAPI + SQLite + background worker) that dispatches notifications to Discord, Slack, Telegram, and System Console. It also hosts the central **Owl Speaks** Ollama-based chat agent.
+2. **[owls-street-view](./owls-street-view)** 💻: A high-fidelity trading dashboard consisting of a FastAPI proxy/API backend and a React single-page application.
+3. **Screener Component** 🔍: A premium stock screener integrated directly into the `owls-street-view` frontend and backend, merging Alpaca real-time market snapshots with fundamental ratios from Financial Modeling Prep (FMP).
 
 ---
 
@@ -22,7 +22,7 @@ graph TD
         Ollama[Local Ollama LLM Service]
     end
 
-    subgraph "Owl Street Pulse (Alert Engine)"
+    subgraph "Owls Street Pulse (Alert Engine)"
         PulseBE[FastAPI Web Server :8000]
         Engine[Alert Check Loop / Worker]
         PulseDB[(SQLite State DB: alerts.db)]
@@ -30,7 +30,7 @@ graph TD
         Notifiers[Notifiers: Discord / Slack / Telegram]
     end
 
-    subgraph "Owl Street View (Dashboard)"
+    subgraph "Owls Street View (Dashboard)"
         ViewBE[FastAPI Proxy Server :8080]
         ReactFE[React SPA Client]
     end
@@ -64,12 +64,12 @@ graph TD
 
 ```
 owls-street/
-├── owl-street-pulse/          # Asset Alerting System & Owl Speaks Chat Backend
+├── owls-street-pulse/          # Asset Alerting System & Owl Speaks Chat Backend
 │   ├── src/                   # Python core (main.py, engine.py, chat.py, web.py)
 │   ├── config/                # Polling and technical rule monitors
 │   └── tests/                 # Unit test suite for alerts & chat integration
 │
-├── owl-street-view/           # Trading Dashboard & Option Matrix
+├── owls-street-view/           # Trading Dashboard & Option Matrix
 │   ├── src/                   # FastAPI backend (main.py, web.py, alpaca_service.py)
 │   ├── frontend/              # React SPA frontend (Vite/ESBuild)
 │   │   ├── src/components/    # UI Views (Chart, OptionChainMatrix, Screener, OwlSpeaksChat)
@@ -95,9 +95,9 @@ Both applications use standalone helper scripts named `run.sh` to initialize the
 
 ### Step 1: Run the Alerting Engine (Pulse)
 
-Navigate to the [owl-street-pulse](./owl-street-pulse) directory:
+Navigate to the [owls-street-pulse](./owls-street-pulse) directory:
 ```bash
-cd owl-street-pulse
+cd owls-street-pulse
 ./run.sh
 ```
 This script will copy `.env.example` -> `.env`, build a virtual environment, run indicator tests, and start the daemon at **[http://localhost:8000](http://localhost:8000)**. 
@@ -105,22 +105,22 @@ Open `.env` to customize your Alpaca credentials, Ollama configurations, and web
 
 ### Step 2: Run the Trading Dashboard & Screener (View)
 
-In a separate terminal tab, navigate to the [owl-street-view](./owl-street-view) directory:
+In a separate terminal tab, navigate to the [owls-street-view](./owls-street-view) directory:
 ```bash
-cd owl-street-view
+cd owls-street-view
 ./run.sh
 ```
 This script copies configurations, installs dependencies, compiles React production bundle assets, and launches the dashboard at **[http://localhost:8080](http://localhost:8080)**.
-Configure your `.env` in `owl-street-view` to specify target port and API configurations.
+Configure your `.env` in `owls-street-view` to specify target port and API configurations.
 
 > [!NOTE]
-> During active UI/React development, you can boot the backend server via `./run.sh`, then navigate to `owl-street-view/frontend` and run `npm start` or `npm run dev` to launch the frontend with hot-module replacement (configured to proxy requests automatically to port `8080`).
+> During active UI/React development, you can boot the backend server via `./run.sh`, then navigate to `owls-street-view/frontend` and run `npm start` or `npm run dev` to launch the frontend with hot-module replacement (configured to proxy requests automatically to port `8080`).
 
 ---
 
 ## 📖 Component Documentation
 
 For details on configuration and running specific systems, please refer to their respective READMEs:
-- **Alert System Guide**: Refer to [owl-street-pulse/README.md](./owl-street-pulse/README.md)
-- **Dashboard Interface Guide**: Refer to [owl-street-view/README.md](./owl-street-view/README.md)
-- **Stock Screener Deep-Dive**: Refer to [owl-street-view/SCREENER.md](./owl-street-view/SCREENER.md)
+- **Alert System Guide**: Refer to [owls-street-pulse/README.md](./owls-street-pulse/README.md)
+- **Dashboard Interface Guide**: Refer to [owls-street-view/README.md](./owls-street-view/README.md)
+- **Stock Screener Deep-Dive**: Refer to [owls-street-view/SCREENER.md](./owls-street-view/SCREENER.md)
