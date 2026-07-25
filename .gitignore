@@ -7,3 +7,12 @@ __pycache__/
 owl-street-view/logs/
 owl-street-view/frontend/build/
 owl-street-view/frontend/node_modules/
+
+# Secrets and credential exclusions
+.env
+.env.*
+google-oauth-secret.json
+
+# Local databases state
+*.db
+data/

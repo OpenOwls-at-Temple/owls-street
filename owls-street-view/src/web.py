@@ -185,6 +185,7 @@ def get_auth_config(request: Request):
 def google_mock_login(state: Optional[str] = None):
     return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
 
+
 @app.get("/api/auth/google/login")
 def google_login(request: Request, redirect_to: Optional[str] = None):
     referer = redirect_to or request.headers.get("referer") or "/"
@@ -259,6 +260,8 @@ async def google_callback(request: Request, response: Response, code: str, state
     }
     jwt_token = create_jwt(payload)
     
+    logger.info(f"Google SSO login successful for: {user_email}")
+    
     origin = request.cookies.get("sso_redirect_origin") or "/"
     if origin.endswith("/"):
         origin = origin[:-1]
@@ -320,13 +323,20 @@ def create_session(payload: dict, response: Response):
         if email.lower() not in allowed_emails:
             raise HTTPException(status_code=403, detail=f"Email {email} is not authorized to access this dashboard.")
             
-    import secrets
-    session_token = secrets.token_hex(16)
-    active_sessions.add(session_token)
+    user_name = email.split('@')[0].capitalize()
+    jwt_payload = {
+        "email": email,
+        "name": user_name,
+        "provider": provider,
+        "avatar": f"https://www.gravatar.com/avatar/{hashlib.md5(email.lower().encode()).hexdigest()}?d=mp"
+    }
+    jwt_token = create_jwt(jwt_payload)
+    
+    logger.info(f"Created active session for email: {email} (provider: {provider})")
     
     response.set_cookie(
         key="session_token",
-        value=session_token,
+        value=jwt_token,
         httponly=True,
         samesite="lax",
         max_age=30 * 24 * 3600
@@ -943,8 +953,20 @@ async def websocket_quotes(websocket: WebSocket):
 
 # ── Serve React Static Assets ────────────────────────────────────────────────
 
-frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "build")
-if os.path.exists(frontend_dir):
+possible_frontend_dirs = [
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "build"),
+    os.path.join(os.getcwd(), "owl-street-view", "frontend", "build"),
+    os.path.join(os.getcwd(), "frontend", "build"),
+]
+frontend_dir = None
+for d in possible_frontend_dirs:
+    if os.path.exists(d):
+        frontend_dir = d
+        break
+
+template_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
+
+if frontend_dir and os.path.exists(frontend_dir):
     logger.info(f"Serving frontend static build from: {frontend_dir}")
     
     # Mount static assets directory
@@ -952,6 +974,14 @@ if os.path.exists(frontend_dir):
     if os.path.exists(static_assets_path):
         app.mount("/static", StaticFiles(directory=static_assets_path), name="static")
     
+    @app.get("/", response_class=HTMLResponse)
+    def serve_dashboard():
+        index_file = os.path.join(frontend_dir, "index.html")
+        if os.path.exists(index_file):
+            with open(index_file, "r") as f:
+                return HTMLResponse(content=f.read())
+        return HTMLResponse(content="<h1>Frontend index.html not found!</h1>", status_code=404)
+
     # Fallback to index.html for client side routing
     @app.get("/{full_path:path}", response_class=HTMLResponse)
     def serve_frontend(full_path: str):
@@ -963,4 +993,13 @@ if os.path.exists(frontend_dir):
                 return HTMLResponse(content=f.read())
         return HTMLResponse(content="<h1>Frontend index.html not found!</h1>", status_code=404)
 else:
-    logger.warning("Frontend build directory 'frontend/build' not found. App will run in API-only mode.")
+    logger.warning("Frontend build directory 'frontend/build' not found. App will run in API-only mode or serve standalone template.")
+    
+    @app.get("/", response_class=HTMLResponse)
+    def serve_dashboard():
+        if os.path.exists(template_path):
+            with open(template_path, "r") as f:
+                return HTMLResponse(content=f.read())
+        return HTMLResponse(content="<h1>Owl Street View UI Template Not Found!</h1>", status_code=404)
+
+
