@@ -32,8 +32,8 @@ Designed to be hosted on private servers, it is lightweight, fully containerized
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/owl-street-pulse.git
-   cd owl-street-pulse
+   git clone https://github.com/your-username/owls-street-pulse.git
+   cd owls-street-pulse
    ```
 
 2. **Setup and Launch**:

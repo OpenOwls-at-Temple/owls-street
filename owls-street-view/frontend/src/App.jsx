@@ -718,7 +718,7 @@ export default function App() {
                     The owls got tired delivering the alerts...
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', fontSize: 15, maxWidth: 460, margin: '0 0 28px 0', lineHeight: 1.6 }}>
-                    They've taken a quick power nap! Once you boot up the Owl Street Pulse service (run <code>./run.sh</code> inside <code>owl-street-pulse</code> folder), they will be right back at work.
+                    They've taken a quick power nap! Once you boot up the Owl Street Pulse service (run <code>./run.sh</code> inside <code>owls-street-pulse</code> folder), they will be right back at work.
                   </p>
                   <button
                     type="button"

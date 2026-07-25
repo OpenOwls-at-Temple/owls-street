@@ -56,7 +56,7 @@ For active frontend development with hot-reloading:
 
 ## Project Structure
 ```
-owl-street-view/
+owls-street-view/
 ├── config/
 │   ├── config.yaml          # YAML settings configuration
 │   └── config.yaml.example

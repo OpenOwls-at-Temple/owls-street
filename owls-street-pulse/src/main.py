@@ -88,7 +88,7 @@ def main():
 
     # Set up logs before doing anything else
     setup_logging()
-    logger = logging.getLogger("owl-street-pulse")
+    logger = logging.getLogger("owls-street-pulse")
 
     logger.info("Initializing Owl Street Pulse Alert System...")
 

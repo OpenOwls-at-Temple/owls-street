@@ -1,6 +1,6 @@
 # Owl Street Stock Screener 🔍📊
 
-The **Stock Screener** is a high-performance filtering tool built into the [owl-street-view](../owl-street-view) dashboard. It allows you to filter and sort through thousands of US equities based on live technicals, daily pricing, volume snapshots, and institutional-grade company fundamentals.
+The **Stock Screener** is a high-performance filtering tool built into the [owls-street-view](../owls-street-view) dashboard. It allows you to filter and sort through thousands of US equities based on live technicals, daily pricing, volume snapshots, and institutional-grade company fundamentals.
 
 ---
 
@@ -25,9 +25,9 @@ The screener is designed to run in a dual mode depending on your active API keys
 2. **Alpaca + Financial Modeling Prep (FMP) (Full Mode)**:
    Provides access to financial metrics, valuation, growth, margins, and dividend yields.
 
-To enable **Full Mode**, ensure your `FMP_API_KEY` is specified in your `owl-street-view/.env` file:
+To enable **Full Mode**, ensure your `FMP_API_KEY` is specified in your `owls-street-view/.env` file:
 ```env
-# owl-street-view/.env
+# owls-street-view/.env
 FMP_API_KEY=your_fmp_api_key_here
 ```
 
@@ -71,7 +71,7 @@ The screener organizes dropdown options into logical categories based on modern 
 
 ## ⚙️ Architecture & Technical Detail
 
-### Backend Pipeline (`owl-street-view/src/alpaca_service.py` -> `run_screener`)
+### Backend Pipeline (`owls-street-view/src/alpaca_service.py` -> `run_screener`)
 1. **Universe Resolution**: Translates the selected workspace scope into a list of candidate symbols.
 2. **Batch Pricing Snapshot**: Pulls live market snapshots for all candidate symbols from Alpaca in a single optimized request.
 3. **Market Filters Application**: Prunes tickers that do not meet standard price, volume, open, or range constraints.
@@ -80,7 +80,7 @@ The screener organizes dropdown options into logical categories based on modern 
    - Merges these dictionaries into the rows.
 5. **Sorting & Pagination**: Sorts by your specified key (e.g. Market Cap or % Change) and returns the top matching records up to the request `limit`.
 
-### Frontend Component (`owl-street-view/frontend/src/components/Screener.jsx`)
+### Frontend Component (`owls-street-view/frontend/src/components/Screener.jsx`)
 - Built as a responsive React table with virtualized inputs.
 - Handles responsive column configurations (`Overview`, `Minimal`, `Extended`).
 - Custom preset integrations: Quickly jump to `Top gainers`, `Top losers`, or `High volume`.

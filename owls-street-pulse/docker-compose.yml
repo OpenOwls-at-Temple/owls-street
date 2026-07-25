@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  owl-street-pulse:
+  owls-street-pulse:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: owl-street-pulse
+    container_name: owls-street-pulse
     restart: unless-stopped
     env_file:
       - .env

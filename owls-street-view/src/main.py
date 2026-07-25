@@ -58,7 +58,7 @@ def main():
 
     # Set up logs before doing anything else
     setup_logging()
-    logger = logging.getLogger("owl-street-view")
+    logger = logging.getLogger("owls-street-view")
 
     logger.info("Initializing Owl Street View Trading Dashboard...")
 
