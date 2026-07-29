@@ -1,4 +1,6 @@
-version: '3.8'
+# Standalone Pulse deployment. To run Pulse alongside the trading dashboard, use the
+# docker-compose.yml at the repository root instead.
+name: owls-street-pulse
 
 services:
   owls-street-pulse:
@@ -8,14 +10,18 @@ services:
     container_name: owls-street-pulse
     restart: unless-stopped
     env_file:
-      - .env
+      - path: .env
+        required: false
     ports:
       - "8000:8000"
     volumes:
-      # Mount configuration folder (Read-Write for UI saves)
-      - ./config:/app/config
-      # Mount data folder to persist SQLite database
-      - ./data:/app/data
-      # Mount logs folder to view application log files on host
-      - ./logs:/app/logs
+      # Named volumes rather than bind mounts. The container runs as a non-root user, so
+      # bind-mounting host directories requires matching uids to stay writable; a bind
+      # mount over ./config would also hide the seeded config.yaml, since only
+      # config.yaml.example is in version control.
+      - pulse-config:/app/config
+      - pulse-data:/app/data
 
+volumes:
+  pulse-config:
+  pulse-data:

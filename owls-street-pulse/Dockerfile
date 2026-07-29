@@ -1,5 +1,5 @@
 # Production Dockerfile
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 # Prevent writing pyc files and buffer stdout/stderr for immediate log visibility
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies (curl for optional debugging/healthchecks)
+# Install system dependencies (curl for the healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -21,9 +21,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application source
 COPY src/ ./src/
 COPY config/ ./config/
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Create folders for database state and log output
-RUN mkdir -p data logs
+RUN mkdir -p data logs && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Setup secure non-root user
 RUN useradd -u 1000 appuser && \
@@ -31,5 +32,10 @@ RUN useradd -u 1000 appuser && \
 
 USER appuser
 
-# Executable command to launch daemon mode
-CMD ["python", "src/main.py", "--config", "config/config.yaml", "--db", "data/alerts.db"]
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl -fsS http://localhost:8000/api/status || exit 1
+
+# Entrypoint seeds config/config.yaml when absent, then launches daemon mode
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["python", "src/main.py", "--config", "config/config.yaml", "--db", "data/alerts.db", "--host", "0.0.0.0", "--port", "8000"]

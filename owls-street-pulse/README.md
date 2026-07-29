@@ -59,25 +59,31 @@ Designed to be hosted on private servers, it is lightweight, fully containerized
 
 ## Deployment with Docker (Production Grade)
 
-For 24/7 reliability on a private server (e.g. VPS), use Docker Compose.
+For 24/7 reliability on a private server (e.g. VPS), use Docker Compose. To run Pulse
+alongside the trading dashboard instead, use the compose file at the repository root and
+see [DEPLOYMENT.md](../DEPLOYMENT.md).
 
-1. Create the database and log folders on the host machine to ensure write permissions map correctly:
+1. Create your environment file:
    ```bash
-   mkdir -p data logs
-   chmod 777 data logs
+   cp .env.example .env
    ```
 2. Build and run the container in detached (background) mode:
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
 3. View runtime logs:
    ```bash
-   docker-compose logs -f
+   docker compose logs -f
    ```
 4. Stop the daemon:
    ```bash
-   docker-compose down
+   docker compose down          # keeps the database
+   docker compose down -v       # discards the database
    ```
+
+Configuration and alert history live in the `pulse-config` and `pulse-data` named volumes,
+so no host directories or permission changes are needed. `config/config.yaml` is seeded
+from `config.yaml.example` on first boot.
 
 ---
 

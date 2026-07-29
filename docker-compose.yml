@@ -1,0 +1,53 @@
+name: owls-street
+
+# Runs the whole ecosystem on one host. Both apps keep full functionality here:
+# Pulse's background alert engine, its SQLite state, the view's live WebSocket quote
+# stream, and the Owl Speaks chat proxy between them.
+#
+#   docker compose up -d --build     start both
+#   docker compose up -d pulse       start only the alert engine
+#   docker compose logs -f view      follow one service
+#
+# Credentials come from each app's .env file — copy the .env.example next to it first.
+# Requires Docker Compose v2.24+ (for the optional env_file form below).
+
+services:
+  pulse:
+    build:
+      context: ./owls-street-pulse
+    image: owls-street-pulse
+    container_name: owls-street-pulse
+    restart: unless-stopped
+    env_file:
+      - path: ./owls-street-pulse/.env
+        required: false
+    ports:
+      - "8000:8000"
+    volumes:
+      # Named volumes rather than bind mounts: the engine writes both paths, and a
+      # bind mount would need matching host uids to stay writable by the non-root user.
+      - pulse-config:/app/config
+      - pulse-data:/app/data
+
+  view:
+    build:
+      context: ./owls-street-view
+    image: owls-street-view
+    container_name: owls-street-view
+    restart: unless-stopped
+    env_file:
+      - path: ./owls-street-view/.env
+        required: false
+    environment:
+      # Reach Pulse over the compose network, not localhost. Overrides any PULSE_URL
+      # in the .env file above.
+      PULSE_URL: http://pulse:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      pulse:
+        condition: service_healthy
+
+volumes:
+  pulse-config:
+  pulse-data:
