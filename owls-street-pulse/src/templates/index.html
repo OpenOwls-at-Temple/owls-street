@@ -879,6 +879,9 @@
                     Sign in with Temple SSO
                 </button>
             </div>
+            <div id="auth-unavailable" style="display: none; flex-direction: column; gap: 12px; margin-top: 4px;">
+                <button id="auth-reload-btn" class="btn btn-primary" style="justify-content: center; width: 100%;">Reload</button>
+            </div>
             <p id="auth-error-msg" style="color: var(--accent-danger); font-size: 13px; display: none; margin-top: 12px;"></p>
         </div>
     </div>
@@ -1373,19 +1376,28 @@
                         const divider = document.getElementById("auth-divider");
                         const ssoContainer = document.getElementById("auth-sso-container");
                         const subtitle = document.getElementById("auth-subtitle");
-                        
+                        const unavailable = document.getElementById("auth-unavailable");
+
                         pwForm.style.display = data.password_enabled ? "block" : "none";
                         googleBtn.style.display = data.google_enabled ? "flex" : "none";
                         templeBtn.style.display = data.temple_enabled ? "flex" : "none";
-                        
+
                         const hasSso = data.google_enabled || data.temple_enabled;
                         ssoContainer.style.display = hasSso ? "flex" : "none";
                         divider.style.display = (data.password_enabled && hasSso) ? "flex" : "none";
-                        
-                        if (data.password_enabled) {
+
+                        // Never leave the card with nothing to act on: if the server reports
+                        // no usable sign-in method, say so and offer a way to re-check.
+                        unavailable.style.display = (data.password_enabled || hasSso) ? "none" : "flex";
+
+                        if (data.password_enabled && hasSso) {
                             subtitle.innerText = "Enter password or sign in using SSO to unlock dashboard";
-                        } else {
+                        } else if (data.password_enabled) {
+                            subtitle.innerText = "Enter password to unlock dashboard";
+                        } else if (hasSso) {
                             subtitle.innerText = "Sign in using SSO to unlock dashboard";
+                        } else {
+                            subtitle.innerText = "No sign-in method is configured for this deployment.";
                         }
                     }
                 } catch(e) {
@@ -1407,6 +1419,9 @@
         });
         document.getElementById("temple-login-btn").addEventListener("click", () => {
             window.location.href = "/api/auth/temple/login";
+        });
+        document.getElementById("auth-reload-btn").addEventListener("click", () => {
+            window.location.reload();
         });
 
         async function performUnlock() {
@@ -1464,7 +1479,10 @@
         async function logoutUser() {
             await fetch("/api/auth/logout", {method: "POST"});
             updateUserProfile(null);
-            showLockscreen(true);
+            // Reload rather than locking unconditionally: initApp() checks whether auth
+            // is enabled at all, so deployments with no sign-in method configured land
+            // back on the dashboard instead of a lockscreen with no way through it.
+            window.location.reload();
         }
 
         // Helper to API requests (auth handles 401)
