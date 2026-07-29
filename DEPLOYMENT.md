@@ -39,7 +39,8 @@ git diff --quiet HEAD^ HEAD -- .
 | `GOOGLE_REDIRECT_URI` | with Google SSO | `https://<view-domain>/api/auth/google/callback` |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | optional | Microsoft SSO |
 | `MICROSOFT_REDIRECT_URI` | with Microsoft SSO | `https://<view-domain>/api/auth/microsoft/callback` |
-| `ALLOWED_EMAILS` | optional | Comma-separated allowlist |
+| `ALLOWED_EMAILS` | optional | Comma-separated allowlist for Google sign-ins |
+| `MICROSOFT_ALLOWED_EMAILS` | optional | Comma-separated allowlist for Microsoft sign-ins |
 
 `config/config.yaml` is intentionally *not* bundled into the serverless function, so the
 app configures itself purely from these variables. Register the redirect URIs above in
@@ -64,6 +65,14 @@ endpoints without reading any credentials.
 - **Owl Speaks chat is unavailable.** It requires a local Ollama instance.
 - **Cold starts.** The view function pulls in `pandas` and `alpaca-py`, so the first
   request after idle takes a few seconds.
+
+## Legacy root-level files
+
+The repository root also contains `vercel.json`, `api/`, `requirements.txt`, and a
+`build` script in `package.json` — leftovers from an earlier attempt to deploy the whole
+monorepo as one project serving only `owls-street-view`. They are **not used** by the
+two-project setup above, which reads each app's own subdirectory config. Don't import
+this repo into Vercel without setting a Root Directory.
 
 ## Local development
 
