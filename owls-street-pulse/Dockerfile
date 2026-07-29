@@ -8,10 +8,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install system dependencies (curl for the healthcheck)
+# Install system dependencies (curl for the healthcheck). setpriv comes from util-linux and
+# is what the entrypoint uses to drop privileges; assert it exists now so a missing binary
+# fails the build rather than the container.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && command -v setpriv
 
 # Copy and install dependencies
 COPY requirements.txt .
@@ -26,16 +29,16 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # Create folders for database state and log output
 RUN mkdir -p data logs && chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Setup secure non-root user
+# Setup non-root user. No USER directive: the entrypoint drops to appuser itself, which
+# lets it first take ownership of a volume that a platform mounted as root.
 RUN useradd -u 1000 appuser && \
     chown -R appuser:appuser /app
 
-USER appuser
-
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl -fsS http://localhost:8000/api/status || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl -fsS "http://localhost:${PORT:-8000}/api/status" || exit 1
 
-# Entrypoint seeds config/config.yaml when absent, then launches daemon mode
+# Shell form so PORT and the path overrides expand at runtime. main.py re-exports --config
+# and --db into the environment for web.py, so they must be passed, not just set as env.
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["python", "src/main.py", "--config", "config/config.yaml", "--db", "data/alerts.db", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec python src/main.py --config \"${WEB_CONFIG_PATH:-config/config.yaml}\" --db \"${WEB_DB_PATH:-data/alerts.db}\" --host 0.0.0.0 --port \"${PORT:-8000}\""]

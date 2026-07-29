@@ -1,0 +1,128 @@
+# Render Blueprint — deploys both apps from this repository.
+#
+# Render dashboard → Blueprints → New Blueprint Instance → pick this repo. Render reads
+# this file, creates both services, and prompts for every secret marked `sync: false`.
+#
+# Two things to know before deploying:
+#
+#   * Do not use the free plan for Pulse. Free services spin down when idle, which stops
+#     the alert engine, and persistent disks are not available on free.
+#   * Both services must stay in the same region for the view to reach Pulse over the
+#     internal network.
+
+services:
+  # ── Alert engine ────────────────────────────────────────────────────────────
+  - type: web
+    name: owls-street-pulse
+    runtime: docker
+    dockerfilePath: ./owls-street-pulse/Dockerfile
+    dockerContext: ./owls-street-pulse
+    region: oregon
+    plan: starter
+    healthCheckPath: /api/status
+    autoDeploy: true
+
+    # Render allows one disk per service, so the config file and the SQLite database both
+    # live on it. Losing this disk means losing the trigger/cooldown state that stops
+    # already-sent alerts from firing again.
+    disk:
+      name: pulse-state
+      mountPath: /app/data
+      sizeGB: 1
+
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: WEB_DB_PATH
+        value: /app/data/alerts.db
+      - key: WEB_CONFIG_PATH
+        value: /app/data/config.yaml
+
+      - key: ALPACA_API_KEY
+        sync: false
+      - key: ALPACA_API_SECRET
+        sync: false
+      # Session signing key. Without it the code falls back to a hardcoded default, so
+      # anyone could forge a session. Use Render's generated value.
+      - key: SSO_JWT_SECRET
+        generateValue: true
+
+      # Optional — leave blank in the dashboard to disable.
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: DISCORD_WEBHOOK_URL
+        sync: false
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: ALLOWED_EMAILS
+        sync: false
+
+  # ── Trading dashboard ───────────────────────────────────────────────────────
+  - type: web
+    name: owls-street-view
+    runtime: docker
+    dockerfilePath: ./owls-street-view/Dockerfile
+    dockerContext: ./owls-street-view
+    region: oregon
+    plan: starter
+    healthCheckPath: /api/status
+    autoDeploy: true
+
+    envVars:
+      - key: PORT
+        value: 8080
+      # Internal address of the Pulse service above. Hardcoded rather than derived with
+      # fromService because that yields a bare host:port and this needs a scheme.
+      - key: PULSE_URL
+        value: http://owls-street-pulse:8000
+
+      - key: ALPACA_API_KEY
+        sync: false
+      - key: ALPACA_SECRET_KEY
+        sync: false
+      - key: ALPACA_MODE
+        value: paper
+
+      # Both pulled from Pulse rather than set independently. The Owl Speaks proxy
+      # authenticates to Pulse by sending DASHBOARD_PASSWORD as a cookie, so a mismatch
+      # makes Pulse answer 401 and chat fail with a 502.
+      - key: DASHBOARD_PASSWORD
+        fromService:
+          type: web
+          name: owls-street-pulse
+          envVarKey: DASHBOARD_PASSWORD
+      - key: SSO_JWT_SECRET
+        fromService:
+          type: web
+          name: owls-street-pulse
+          envVarKey: SSO_JWT_SECRET
+
+      # Optional.
+      - key: FMP_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: MICROSOFT_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_REDIRECT_URI
+        sync: false
+      - key: ALLOWED_EMAILS
+        sync: false
+      - key: MICROSOFT_ALLOWED_EMAILS
+        sync: false

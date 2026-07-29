@@ -696,10 +696,13 @@ async def proxy_chat(payload: ChatRequest, request: Request):
         
     url = f"{pulse_url.rstrip('/')}/api/chat"
     
-    # Authenticate internal request using the dashboard password inside the session_token cookie
+    # Authenticate the internal request with the dashboard password. The cookie name must
+    # match what Pulse's verify_dashboard_password reads — it is "pulse_session_token",
+    # renamed from "session_token" to avoid colliding with this app's own cookie. Both
+    # services therefore need the same DASHBOARD_PASSWORD, or Pulse answers 401.
     cookies = {}
     if dashboard_password:
-        cookies["session_token"] = dashboard_password
+        cookies["pulse_session_token"] = dashboard_password
         
     async with httpx.AsyncClient() as client:
         try:

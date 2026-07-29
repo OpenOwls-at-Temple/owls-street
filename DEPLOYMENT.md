@@ -94,21 +94,54 @@ it has no volumes and can be rebuilt or scaled freely.
 Owl Speaks needs a reachable Ollama instance. Running on the host, point
 `OLLAMA_BASE_URL` at `http://host.docker.internal:11434`.
 
-## Deploying to a managed host
+## Deploying to Render
 
-Any platform that runs a Dockerfile works, since both apps are plain containers. Two
-requirements: Pulse needs a **persistent volume** for `/app/data`, or it will lose its
-cooldown state on every restart and re-fire alerts it has already sent; and it must run as
-a **long-lived process**, not scale-to-zero, or the engine stops polling.
+[render.yaml](render.yaml) is a Blueprint that creates both services. In the Render
+dashboard: **Blueprints → New Blueprint Instance**, pick this repository. Render reads the
+file and prompts for each secret marked `sync: false` — at minimum the Alpaca credentials
+for both services.
+
+It sets up:
+
+- Two Docker web services on the **Starter** plan, both in `oregon`, health-checked on
+  `/api/status`.
+- A 1 GB disk on Pulse mounted at `/app/data`, holding both `alerts.db` and `config.yaml`
+  (Render allows one disk per service, so `WEB_DB_PATH` and `WEB_CONFIG_PATH` both point
+  at it).
+- `PULSE_URL` on the view pointing at Pulse's internal address.
+- `DASHBOARD_PASSWORD` and `SSO_JWT_SECRET` pulled from Pulse into the view, so they can't
+  drift apart — see the warning below.
+
+**Do not put Pulse on the free plan.** Free services spin down when idle, which stops the
+alert engine, and persistent disks aren't available on free at all. Losing that disk means
+losing the trigger/cooldown state that prevents already-sent alerts from re-firing.
+
+After the first deploy, update `GOOGLE_REDIRECT_URI` / `MICROSOFT_REDIRECT_URI` to the
+generated `onrender.com` domains and register them in the Google Cloud and Entra consoles.
+
+### Owl Speaks needs a matching password on both services
+
+The view authenticates its chat proxy to Pulse by sending `DASHBOARD_PASSWORD` as the
+`pulse_session_token` cookie, which Pulse compares against its own `DASHBOARD_PASSWORD`.
+If the two differ, Pulse answers `401` and the view surfaces a `502`. The Blueprint shares
+one value across both services to prevent this. If you configure the services by hand,
+keep them in sync.
+
+Owl Speaks also needs a reachable Ollama instance, which Render does not provide — set
+`OLLAMA_BASE_URL` to an externally hosted endpoint or accept that chat stays unavailable.
+
+## Other managed hosts
+
+Any platform that runs a Dockerfile works. Two requirements: Pulse needs a **persistent
+volume** on `/app/data`, and it must run as a **long-lived process**, not scale-to-zero, or
+the engine stops polling.
 
 - **Fly.io** — `fly launch` in each app directory, then `fly volumes create` for Pulse.
   Set `auto_stop_machines = false` on Pulse in `fly.toml`.
 - **Railway** — point a service at each directory; add a volume on `/app/data` for Pulse.
-- **Render** — two web services plus a persistent disk on Pulse. Avoid the free tier: it
-  spins down when idle, which stops the engine.
 
-On any of them, set the env vars above per service and point the view's `PULSE_URL` at
-Pulse's internal hostname.
+Both containers listen on `$PORT` when the platform sets one, falling back to 8000 (Pulse)
+and 8080 (the view).
 
 ## Alternative: Vercel (serverless)
 
