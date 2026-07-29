@@ -1,6 +1,6 @@
 alpaca:
-  api_key: PKPIXGCYS3NAGON7QG4PAS4ANY
-  api_secret: 91KLZuoES5YwTyrLTNL78tHsSLrXhihyoTZo4W6gXeJ1
+  api_key: "${ALPACA_API_KEY}"
+  api_secret: "${ALPACA_SECRET_KEY}"
   mode: paper
 
 fmp:
@@ -11,7 +11,7 @@ server:
   port: 8080
 
 dashboard_password: "${DASHBOARD_PASSWORD}"
-pulse_url: "http://localhost:8001/"
+pulse_url: "${PULSE_URL}"
 
 google_sso:
   client_id: "${GOOGLE_CLIENT_ID}"
