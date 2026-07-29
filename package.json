@@ -1,8 +1,0 @@
-{
-  "name": "owls-street-monorepo",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "build": "cd owls-street-view/frontend && npm install && npm run build && cd ../.. && mkdir -p build && cp -r owls-street-view/frontend/build/* build/"
-  }
-}

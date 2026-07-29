@@ -66,17 +66,13 @@ endpoints without reading any credentials.
 - **Cold starts.** The view function pulls in `pandas` and `alpaca-py`, so the first
   request after idle takes a few seconds.
 
-## Legacy root-level files
+## Always set a Root Directory
 
-The root `vercel.json` has been deleted — it held no settings and only invited a
-root-level import. The root `api/`, `requirements.txt`, and `build` script in
-`package.json` remain as leftovers from an earlier attempt to deploy the whole monorepo
-as one project serving only `owls-street-view`. They are **not used** by the two-project
-setup above, which reads each app's own subdirectory config.
-
-Always set a Root Directory when importing this repo into Vercel. Without one, Vercel
-would still detect the root `package.json` build script and `api/index.py` and produce a
-broken deployment.
+The repository root used to carry its own `vercel.json`, `api/`, `requirements.txt`, and
+`package.json` — an earlier attempt to deploy the whole monorepo as one project serving
+only `owls-street-view`. All of it has been removed, so the root is no longer deployable
+and a Vercel import without a Root Directory now fails immediately rather than shipping a
+broken site. Each app is deployed from its own subdirectory config.
 
 ## Local development
 
