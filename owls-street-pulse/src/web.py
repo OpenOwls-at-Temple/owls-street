@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from src.auth_helper import verify_jwt, create_jwt, MOCK_GOOGLE_LOGIN_HTML
+from src import sso
 
 from src.config import load_config, save_config, AppConfig
 from src.engine import AlertEngine
@@ -207,93 +208,74 @@ def get_auth_config(request: Request):
 
 @app.get("/auth/google-mock/login", response_class=HTMLResponse)
 def google_mock_login(state: Optional[str] = None):
+    if not sso.mock_sso_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
     return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
+
+
+def _google_credentials():
+    """Credentials from the config file when it loads, else the environment."""
+    try:
+        config = load_config(CONFIG_PATH)
+    except Exception:
+        config = None
+    return sso.resolve_google_credentials(config)
 
 
 @app.get("/api/auth/google/login")
 def google_login(request: Request, redirect_to: Optional[str] = None):
     referer = redirect_to or request.headers.get("referer") or "/"
-    
-    try:
-        config = load_config(CONFIG_PATH)
-        client_id, _, _, _ = get_google_sso_credentials(config)
-    except Exception:
-        client_id = GOOGLE_CLIENT_ID
-        
-    if client_id and client_id != "mock":
-        state = "google_state"
-        redirect_uri = f"{request.base_url}api/auth/google/callback"
-        auth_url = (
-            f"https://accounts.google.com/o/oauth2/v2/auth?"
-            f"client_id={client_id}&"
-            f"response_type=code&"
-            f"scope=openid%20email%20profile&"
-            f"redirect_uri={redirect_uri}&"
-            f"state={state}"
+    client_id, _, configured_redirect, _ = _google_credentials()
+
+    # Random per attempt and verified on the way back, so the callback cannot be replayed
+    # or forged from another origin. This was previously a fixed string.
+    state = sso.new_state()
+
+    if client_id:
+        response = RedirectResponse(
+            sso.google_auth_url(client_id, sso.callback_url(request, configured_redirect), state)
         )
-        response = RedirectResponse(auth_url)
-    else:
-        state = "google_state"
+    elif sso.mock_sso_enabled():
         response = RedirectResponse(url=f"/auth/google-mock/login?state={state}")
-        
-    response.set_cookie(key="sso_redirect_origin", value=referer, httponly=True, samesite="lax")
+    else:
+        raise HTTPException(
+            status_code=503,
+            detail="Google SSO is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+        )
+
+    response.set_cookie(key=sso.STATE_COOKIE, value=state, httponly=True, samesite="lax", max_age=600)
+    response.set_cookie(key=sso.ORIGIN_COOKIE, value=referer, httponly=True, samesite="lax")
     return response
 
 @app.get("/api/auth/google/callback")
 async def google_callback(request: Request, response: Response, code: str, state: Optional[str] = None, email: Optional[str] = None, name: Optional[str] = None):
-    user_email = email or "shuv@gmail.com"
-    user_name = name or "Shuv"
-    
+    client_id, client_secret, configured_redirect, allowed_emails_str = _google_credentials()
+
     try:
-        config = load_config(CONFIG_PATH)
-        client_id, client_secret, _, allowed_emails_str = get_google_sso_credentials(config)
-    except Exception:
-        client_id = GOOGLE_CLIENT_ID
-        client_secret = GOOGLE_CLIENT_SECRET
-        allowed_emails_str = os.environ.get("ALLOWED_EMAILS", "")
-        
-    if client_id and client_secret and code != "mock_code":
-        import httpx
-        try:
-            redirect_uri = f"{request.base_url}api/auth/google/callback"
-            async with httpx.AsyncClient() as client:
-                token_res = await client.post(
-                    "https://oauth2.googleapis.com/token",
-                    data={
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "code": code,
-                        "grant_type": "authorization_code",
-                        "redirect_uri": redirect_uri
-                    }
-                )
-                token_data = token_res.json()
-                access_token = token_data.get("access_token")
-                
-                userinfo_res = await client.get(
-                    "https://www.googleapis.com/oauth2/v3/userinfo",
-                    headers={"Authorization": f"Bearer {access_token}"}
-                )
-                userinfo = userinfo_res.json()
-                user_email = userinfo.get("email", "unknown@gmail.com")
-                user_name = userinfo.get("name", user_email.split('@')[0])
-        except Exception as e:
-            logger.error(f"Google OAuth exchange failed: {e}", exc_info=True)
-            raise HTTPException(status_code=400, detail=f"OAuth failure: {str(e)}")
+        sso.verify_state(request, state)
 
-    if allowed_emails_str:
-        allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
-        if user_email.lower() not in allowed_emails:
-            raise HTTPException(status_code=403, detail=f"Email {user_email} is not authorized to access this dashboard.")
+        # No fallback identity. Skipping the token exchange is a development-only path and
+        # must be enabled explicitly — otherwise a caller passing code=mock_code could hand
+        # itself any email it liked.
+        if code == "mock_code" or not (client_id and client_secret):
+            if not sso.mock_sso_enabled():
+                raise sso.SsoError("Google SSO is not configured for this deployment.")
+            if not email:
+                raise sso.SsoError("Mock sign-in requires an email address.")
+            user_email = email
+            user_name = name or email.split("@")[0]
+        else:
+            user_email, user_name = await sso.exchange_google_code(
+                client_id, client_secret, code, sso.callback_url(request, configured_redirect)
+            )
 
-    payload = {
-        "email": user_email,
-        "name": user_name,
-        "provider": "google",
-        "avatar": f"https://www.gravatar.com/avatar/{hashlib.md5(user_email.lower().encode()).hexdigest()}?d=mp"
-    }
-    jwt_token = create_jwt(payload)
-    
+        sso.check_email_allowed(user_email, allowed_emails_str)
+    except sso.SsoError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+    jwt_token = create_jwt(sso.session_payload(user_email, user_name))
+    logger.info("Google SSO login successful for %s", user_email)
+
     origin = request.cookies.get("sso_redirect_origin") or "/"
     if origin.endswith("/"):
         origin = origin[:-1]
@@ -307,7 +289,8 @@ async def google_callback(request: Request, response: Response, code: str, state
         samesite="lax",
         max_age=30 * 24 * 3600
     )
-    res_redirect.delete_cookie("sso_redirect_origin")
+    res_redirect.delete_cookie(sso.ORIGIN_COOKIE)
+    res_redirect.delete_cookie(sso.STATE_COOKIE)
     return res_redirect
 
 # Temple SSO endpoints removed

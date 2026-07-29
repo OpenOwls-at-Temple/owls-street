@@ -169,6 +169,24 @@ it has no volumes and can be rebuilt or scaled freely.
 | `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | optional | Owl Speaks chat agent |
 | `WEB_CONFIG_PATH` / `WEB_DB_PATH` | optional | Override config and database locations |
 
+On Vercel, Pulse needs `ALPACA_*` only if you also run the container; the serverless app
+never touches market data. But it **does** need `SSO_JWT_SECRET` plus whichever of
+`DASHBOARD_PASSWORD` and `GOOGLE_*` you use — sign-in is fully functional there.
+
+## Never set ALLOW_MOCK_SSO in a deployment
+
+Both apps have a development sign-in path that issues a session for a caller-supplied email
+without contacting the identity provider. It is reachable **only** when `ALLOW_MOCK_SSO` is
+set to `1`, and it must stay unset everywhere except a local machine. With it unset:
+
+- `/api/auth/google/callback?code=mock_code&...` is rejected with `403`.
+- `/auth/google-mock/login` and the view's `/api/auth/microsoft/mock-*` routes return `404`.
+- Sign-in requires a real `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` pair, and `/api/auth/
+  google/login` answers `503` when they're absent rather than silently falling back to mock.
+
+OAuth `state` is random per attempt and checked against a cookie on return, so a callback
+cannot be replayed or forged from another site.
+
 Owl Speaks needs a reachable Ollama instance. Running on the host, point
 `OLLAMA_BASE_URL` at `http://host.docker.internal:11434`.
 
