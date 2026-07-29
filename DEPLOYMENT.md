@@ -68,11 +68,15 @@ endpoints without reading any credentials.
 
 ## Legacy root-level files
 
-The repository root also contains `vercel.json`, `api/`, `requirements.txt`, and a
-`build` script in `package.json` — leftovers from an earlier attempt to deploy the whole
-monorepo as one project serving only `owls-street-view`. They are **not used** by the
-two-project setup above, which reads each app's own subdirectory config. Don't import
-this repo into Vercel without setting a Root Directory.
+The root `vercel.json` has been deleted — it held no settings and only invited a
+root-level import. The root `api/`, `requirements.txt`, and `build` script in
+`package.json` remain as leftovers from an earlier attempt to deploy the whole monorepo
+as one project serving only `owls-street-view`. They are **not used** by the two-project
+setup above, which reads each app's own subdirectory config.
+
+Always set a Root Directory when importing this repo into Vercel. Without one, Vercel
+would still detect the root `package.json` build script and `api/index.py` and produce a
+broken deployment.
 
 ## Local development
 
