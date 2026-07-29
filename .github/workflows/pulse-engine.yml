@@ -1,0 +1,116 @@
+name: Pulse Alert Engine
+
+# Runs the alert engine as a scheduled job instead of a long-lived daemon, using the
+# --once mode already built into src/main.py. This is the free alternative to hosting
+# Pulse on a server: notifications go straight from this runner to Discord/Slack/Telegram.
+#
+# Trigger/cooldown state lives in alerts.db, which is restored from and written back to the
+# orphan `pulse-state` branch. That branch is force-pushed as a single commit every run, so
+# the repository does not grow over time and main's history stays clean.
+#
+# Setup:
+#   1. Add repository secrets: ALPACA_API_KEY, ALPACA_API_SECRET, and whichever webhook
+#      secrets your notifiers use.
+#   2. Commit owls-street-pulse/config/config.yaml with your monitors and at least one
+#      notifier enabled. Without it this falls back to config.yaml.example, whose only
+#      enabled notifier is `console` — alerts would just print to the run log and reach
+#      nobody. See DEPLOYMENT.md.
+
+on:
+  schedule:
+    # Every 10 minutes, weekdays. 13:00-21:00 UTC spans 09:30-16:00 ET under both EST and
+    # EDT. Widen this if you monitor crypto, which trades outside market hours.
+    - cron: '*/10 13-21 * * 1-5'
+  workflow_dispatch:
+
+# Never let two runs evaluate rules at once — they would race on the state branch and
+# could double-send alerts.
+concurrency:
+  group: pulse-engine
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: owls-street-pulse/requirements.txt
+
+      - name: Install dependencies
+        working-directory: owls-street-pulse
+        run: pip install -r requirements.txt
+
+      - name: Restore alert state
+        working-directory: owls-street-pulse
+        run: |
+          mkdir -p data
+          if git fetch --depth=1 origin pulse-state 2>/dev/null; then
+            git show origin/pulse-state:alerts.db > data/alerts.db
+            echo "Restored alert state ($(wc -c < data/alerts.db) bytes)."
+          else
+            echo "No pulse-state branch yet — starting with an empty database."
+          fi
+
+      - name: Resolve configuration
+        working-directory: owls-street-pulse
+        run: |
+          if [ -f config/config.yaml ]; then
+            echo "Using committed config/config.yaml."
+          else
+            echo "::warning::config/config.yaml is not committed; falling back to"\
+                 "config.yaml.example, whose only enabled notifier is 'console'."\
+                 "Alerts will print to this log and be sent nowhere."
+            cp config/config.yaml.example config/config.yaml
+          fi
+
+      - name: Evaluate alert rules
+        working-directory: owls-street-pulse
+        env:
+          PYTHONPATH: .
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m src.main --once --config config/config.yaml --db data/alerts.db
+
+      - name: Persist alert state
+        # Runs even if rule evaluation failed partway: any alert already dispatched has had
+        # its cooldown recorded, and losing that would re-send it on the next run.
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          db="$GITHUB_WORKSPACE/owls-street-pulse/data/alerts.db"
+          if [ ! -f "$db" ]; then
+            echo "No database produced — nothing to persist."
+            exit 0
+          fi
+
+          work=$(mktemp -d)
+          cp "$db" "$work/alerts.db"
+          cd "$work"
+
+          # A fresh single-commit orphan branch each run, force-pushed. Keeps the state
+          # current without accumulating thousands of binary blobs in the repository.
+          git init -q -b pulse-state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add alerts.db
+          git commit -q -m "Pulse alert state @ $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push -q --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            pulse-state
+          echo "Persisted alert state to the pulse-state branch."

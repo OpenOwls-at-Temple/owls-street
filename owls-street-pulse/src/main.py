@@ -22,6 +22,17 @@ def handle_shutdown_signal(signum, frame):
     logger.info("Shutdown signal received. Wrapping up current tasks and exiting...")
     keep_running = False
 
+class _ErrorCounter(logging.Handler):
+    """Counts ERROR-and-above records so one-off runs can report a non-zero exit status."""
+
+    def __init__(self):
+        super().__init__(level=logging.ERROR)
+        self.count = 0
+
+    def emit(self, record):
+        self.count += 1
+
+
 def setup_logging(log_dir: str = "logs"):
     """Configures system-wide logging with both Console and Rotating File outputs."""
     os.makedirs(log_dir, exist_ok=True)
@@ -119,10 +130,26 @@ def main():
             logger.error(f"Failed to initialize Alert Engine: {e}")
             sys.exit(1)
 
+        # run_checks() handles per-symbol failures internally and returns normally, so a
+        # cycle where every fetch 401'd used to exit 0. In daemon mode that is right — the
+        # next tick retries — but a scheduled one-off run reporting success while silently
+        # delivering nothing is the failure you most need to see. Count logged errors and
+        # exit non-zero so the caller (cron, CI) surfaces it.
+        error_counter = _ErrorCounter()
+        logging.getLogger().addHandler(error_counter)
         try:
             engine.run_checks()
         except Exception as e:
             logger.error(f"Error during checks: {e}")
+            sys.exit(1)
+        finally:
+            logging.getLogger().removeHandler(error_counter)
+
+        if error_counter.count:
+            logger.error(
+                f"One-off checks completed with {error_counter.count} error(s) — "
+                "some rules were not evaluated."
+            )
             sys.exit(1)
         logger.info("One-off checks complete. Exiting.")
     else:

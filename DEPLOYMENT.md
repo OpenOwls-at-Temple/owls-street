@@ -1,11 +1,89 @@
 # Deploying Owls Street
 
-Both apps run as containers on a single host. This keeps every feature working — Pulse's
-background alert engine, its SQLite state, the view's live WebSocket quote stream, and the
-Owl Speaks chat proxy between the two.
+Two supported shapes:
 
-A [limited Vercel deployment](#alternative-vercel-serverless) also exists, but Pulse's
-engine cannot run there. Use containers unless you specifically need Vercel's CDN.
+| | [Free](#free-deployment-vercel--github-actions) | [Containers](#container-deployment) |
+| --- | --- | --- |
+| Dashboards | Vercel Hobby | Any Docker host |
+| Alert engine | GitHub Actions cron, ~10 min | Background thread, 60 s |
+| Alert state | `pulse-state` branch | Persistent volume |
+| Live WebSocket quotes | ✗ | ✓ |
+| Owl Speaks chat | ✗ (needs Ollama) | ✓ |
+| Cost | $0 | ~$5–15/mo |
+
+The free shape delivers alerts and serves both dashboards, which covers most of what the
+project is for. Move to containers when you want second-by-second polling, streaming
+prices, or the chat agent.
+
+---
+
+# Free deployment (Vercel + GitHub Actions)
+
+## 1. Dashboards on Vercel
+
+Create two Vercel projects from this repository, each with **Root Directory** set to its
+subfolder — `owls-street-view` and `owls-street-pulse`. Add the environment variables from
+[the tables below](#environment-variables). Hobby plan is enough.
+
+The view is fully functional. Pulse runs in reduced mode: the dashboard renders, and engine,
+alert, config, and chat endpoints return `503`, which the UI detects and explains.
+
+Because both projects watch the same repository, a push rebuilds both. Set **Ignored Build
+Step** per project to skip no-op builds:
+
+```sh
+git diff --quiet HEAD^ HEAD -- .
+```
+
+## 2. Alert engine on GitHub Actions
+
+[.github/workflows/pulse-engine.yml](.github/workflows/pulse-engine.yml) runs the engine on
+a schedule using the `--once` mode built into `src/main.py`. Notifications go straight from
+the runner to Discord, Slack, or Telegram, so no server is involved.
+
+**Add repository secrets** (Settings → Secrets and variables → Actions): `ALPACA_API_KEY`,
+`ALPACA_API_SECRET`, plus whichever of `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`,
+`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` you use.
+
+**Commit `owls-street-pulse/config/config.yaml`** with your monitors and at least one
+notifier enabled. This matters: without that file the workflow falls back to
+`config.yaml.example`, whose only enabled notifier is `console` — alerts would print to the
+run log and reach nobody. The Settings tab can't help here, since Pulse's Vercel deployment
+can't write config.
+
+Then trigger it once by hand (Actions → Pulse Alert Engine → Run workflow) to confirm it
+works before relying on the schedule.
+
+### How state survives between runs
+
+`alerts.db` holds the trigger and cooldown state that stops an alert re-firing every run.
+The workflow restores it from an orphan `pulse-state` branch and force-pushes a fresh
+single-commit branch afterwards, so the repository doesn't accumulate binary blobs and
+`main`'s history stays clean. It persists state even when a run fails, because any alert
+already dispatched has had its cooldown recorded.
+
+A run **fails loudly** if any rule couldn't be evaluated — expired Alpaca credentials show
+up as a red ✗ rather than a green check with nothing delivered.
+
+### Limits to accept
+
+- **Granularity is ~10 minutes**, not 60 seconds. GitHub's minimum cron interval is 5
+  minutes and scheduled runs are queued, so they can be late under load.
+- **Public repository required.** Actions minutes are unlimited on public repos; private
+  repos get 2,000/month, far short of a 10-minute schedule.
+- **Market hours only** by default. Crypto trades continuously — widen the cron if you
+  monitor it.
+- **GitHub disables scheduled workflows after 60 days of repository inactivity.** A commit
+  or a manual run re-enables them.
+- The Pulse dashboard on Vercel **won't show these alerts**, since it can't read the state
+  branch. The run logs and your notifier channel are the record.
+
+---
+
+# Container deployment
+
+Runs both apps on a single host with every feature working — Pulse's background engine, its
+SQLite state, the view's WebSocket quote stream, and the Owl Speaks proxy.
 
 ## Quick start
 
@@ -143,26 +221,22 @@ the engine stops polling.
 Both containers listen on `$PORT` when the platform sets one, falling back to 8000 (Pulse)
 and 8080 (the view).
 
-## Alternative: Vercel (serverless)
+## Notes on the Vercel side
 
-The per-app `vercel.json` and `api/index.py` files support deploying each app as its own
-Vercel project with **Root Directory** set to its subfolder. This works, but with real
-limits:
+Details behind the [free deployment](#1-dashboards-on-vercel) above:
 
-- **Pulse runs in reduced mode.** The engine needs a persistent process and a writable
-  SQLite file, neither of which exists on Vercel. [src/vercel_app.py](owls-street-pulse/src/vercel_app.py)
-  serves the dashboard and returns `503` for engine, alert, config, and chat endpoints;
-  the UI detects this and explains itself rather than erroring.
-- **No live quote stream.** `/ws/quotes` is a WebSocket, which Vercel serverless does not
-  support. The dashboard loads and REST calls work, but streaming prices fail.
-- **Owl Speaks is unavailable** — it needs Ollama.
+- **Why Pulse is reduced.** The engine needs a persistent process and a writable SQLite
+  file, neither of which exists on Vercel, so
+  [src/vercel_app.py](owls-street-pulse/src/vercel_app.py) serves the dashboard and returns
+  `503` elsewhere. That is why the engine moves to GitHub Actions.
+- **Vercel Cron can't replace it.** Hobby crons run at most once per day, with a limit of
+  two jobs. Minute-level scheduling needs Pro, plus a hosted database for state — more cost
+  and more work than the Actions route for a worse result.
+- **No live quote stream.** `/ws/quotes` is a WebSocket, unsupported on any Vercel plan.
+  The dashboard loads and REST calls work; streaming prices don't.
 - **Cold starts.** The view function pulls in `pandas` and `alpaca-py`.
-
-The view alone is a good fit for Vercel if you host Pulse in a container and point
-`PULSE_URL` at it — the only feature you lose is WebSocket quotes.
-
-Always set a Root Directory when importing this repo into Vercel. The repository root is
-not deployable; a root-level import will fail.
+- **Always set a Root Directory.** The repository root is not deployable; a root-level
+  import will fail.
 
 ## Local development
 
