@@ -181,19 +181,39 @@ def get_auth_config(request: Request):
         "microsoft_client_id": m_id
     }
 
+def mock_sso_enabled() -> bool:
+    """Mock sign-in is opt-in via ALLOW_MOCK_SSO and must stay off in any deployment.
+
+    The mock paths issue a session for a caller-supplied email without contacting the
+    identity provider, so leaving them reachable is an authentication bypass.
+    """
+    return os.environ.get("ALLOW_MOCK_SSO", "").strip().lower() in ("1", "true", "yes")
+
+
+def verify_oauth_state(request: Request, state: Optional[str]):
+    """Reject a callback whose state doesn't match the cookie set when login started."""
+    expected = request.cookies.get("oauth_state")
+    if not state or not expected or not secrets.compare_digest(state, expected):
+        raise HTTPException(status_code=400, detail="Invalid OAuth state. Start the sign-in again.")
+
+
 @app.get("/auth/google-mock/login", response_class=HTMLResponse)
 def google_mock_login(state: Optional[str] = None):
+    if not mock_sso_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
     return HTMLResponse(content=MOCK_GOOGLE_LOGIN_HTML)
 
 
 @app.get("/api/auth/google/login")
 def google_login(request: Request, redirect_to: Optional[str] = None):
     referer = redirect_to or request.headers.get("referer") or "/"
-    
+
     client_id, _, _, _ = get_google_sso_credentials(app_config)
-    
+    # State is random per attempt and checked on the way back, so a callback cannot be
+    # replayed or forged from another origin.
+    state = secrets.token_urlsafe(24)
+
     if client_id and client_id != "mock":
-        state = "google_state"
         redirect_uri = f"{request.base_url}api/auth/google/callback"
         auth_url = (
             f"https://accounts.google.com/o/oauth2/v2/auth?"
@@ -204,21 +224,36 @@ def google_login(request: Request, redirect_to: Optional[str] = None):
             f"state={state}"
         )
         response = RedirectResponse(auth_url)
-    else:
-        state = "google_state"
+    elif mock_sso_enabled():
         response = RedirectResponse(url=f"/auth/google-mock/login?state={state}")
-        
+    else:
+        raise HTTPException(
+            status_code=503,
+            detail="Google SSO is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
+        )
+
+    response.set_cookie(key="oauth_state", value=state, httponly=True, samesite="lax", max_age=600)
     response.set_cookie(key="sso_redirect_origin", value=referer, httponly=True, samesite="lax")
     return response
 
 @app.get("/api/auth/google/callback")
 async def google_callback(request: Request, response: Response, code: str, state: Optional[str] = None, email: Optional[str] = None, name: Optional[str] = None):
-    user_email = email or "shuv@gmail.com"
-    user_name = name or "Shuv"
-    
+    verify_oauth_state(request, state)
+
     client_id, client_secret, _, allowed_emails_str = get_google_sso_credentials(app_config)
-    
-    if client_id and client_secret and code != "mock_code":
+
+    # No fallback identity: a callback that cannot complete a real token exchange must fail
+    # rather than invent a user. Skipping the exchange is a development-only path.
+    if code == "mock_code" or not (client_id and client_secret):
+        if not mock_sso_enabled():
+            raise HTTPException(
+                status_code=403, detail="Google SSO is not configured for this deployment."
+            )
+        if not email:
+            raise HTTPException(status_code=400, detail="Mock sign-in requires an email address.")
+        user_email = email
+        user_name = name or email.split("@")[0]
+    else:
         import httpx
         try:
             redirect_uri = f"{request.base_url}api/auth/google/callback"
@@ -241,8 +276,13 @@ async def google_callback(request: Request, response: Response, code: str, state
                     headers={"Authorization": f"Bearer {access_token}"}
                 )
                 userinfo = userinfo_res.json()
-                user_email = userinfo.get("email", "unknown@gmail.com")
-                user_name = userinfo.get("name", user_email.split('@')[0])
+                user_email = userinfo.get("email")
+                if not user_email:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Google did not return an email address for this account.",
+                    )
+                user_name = userinfo.get("name") or user_email.split('@')[0]
         except Exception as e:
             logger.error(f"Google OAuth exchange failed: {e}", exc_info=True)
             raise HTTPException(status_code=400, detail=f"OAuth failure: {str(e)}")
@@ -396,9 +436,18 @@ async def microsoft_callback(request: Request, code: Optional[str] = None, state
     if not app_config or not app_config.microsoft_sso or not app_config.microsoft_sso.client_id:
         raise HTTPException(status_code=400, detail="Microsoft SSO is not configured")
         
-    user_email = email or "test@gmail.com"
-    user_name = name or "Test User"
-    
+    # As with Google: no fallback identity, and skipping the token exchange is a
+    # development-only path that must be enabled explicitly.
+    if code == "mock_code" or not app_config.microsoft_sso.client_secret:
+        if not mock_sso_enabled():
+            raise HTTPException(
+                status_code=403, detail="Microsoft SSO is not configured for this deployment."
+            )
+        if not email:
+            raise HTTPException(status_code=400, detail="Mock sign-in requires an email address.")
+        user_email = email
+        user_name = name or email.split("@")[0]
+
     if app_config.microsoft_sso.client_id and app_config.microsoft_sso.client_secret and code != "mock_code":
         redirect_uri = app_config.microsoft_sso.redirect_uri
         if not redirect_uri:
@@ -472,6 +521,8 @@ async def microsoft_callback(request: Request, code: Optional[str] = None, state
 
 @app.get("/api/auth/microsoft/mock-login", response_class=HTMLResponse)
 def microsoft_mock_login(request: Request, state: str):
+    if not mock_sso_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -589,10 +640,14 @@ def microsoft_mock_login(request: Request, state: str):
 @app.get("/api/auth/microsoft/mock-callback")
 def microsoft_mock_callback(request: Request, email: str, state: str):
     global app_config
-    cookie_state = request.cookies.get("oauth_state")
-    if not state or state != cookie_state:
-        raise HTTPException(status_code=400, detail="Invalid OAuth state")
-        
+    # This route issues a session for whatever email it is handed, so it must never be
+    # reachable in a deployment — the state cookie alone is no barrier, since the caller
+    # can obtain one from mock-login.
+    if not mock_sso_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
+
+    verify_oauth_state(request, state)
+
     allowed_emails_str = app_config.microsoft_sso.allowed_emails or os.environ.get("ALLOWED_EMAILS", "")
     if allowed_emails_str:
         allowed_emails = [e.strip().lower() for e in allowed_emails_str.split(",") if e.strip()]
@@ -696,10 +751,13 @@ async def proxy_chat(payload: ChatRequest, request: Request):
         
     url = f"{pulse_url.rstrip('/')}/api/chat"
     
-    # Authenticate internal request using the dashboard password inside the session_token cookie
+    # Authenticate the internal request with the dashboard password. The cookie name must
+    # match what Pulse's verify_dashboard_password reads — it is "pulse_session_token",
+    # renamed from "session_token" to avoid colliding with this app's own cookie. Both
+    # services therefore need the same DASHBOARD_PASSWORD, or Pulse answers 401.
     cookies = {}
     if dashboard_password:
-        cookies["session_token"] = dashboard_password
+        cookies["pulse_session_token"] = dashboard_password
         
     async with httpx.AsyncClient() as client:
         try:

@@ -278,7 +278,7 @@
         .stat-value {
             font-size: 28px;
             font-weight: 700;
-            color: #fff;
+            color: var(--text-primary);
         }
 
         /* Pulse Dots */
@@ -879,6 +879,9 @@
                     Sign in with Temple SSO
                 </button>
             </div>
+            <div id="auth-unavailable" style="display: none; flex-direction: column; gap: 12px; margin-top: 4px;">
+                <button id="auth-reload-btn" class="btn btn-primary" style="justify-content: center; width: 100%;">Reload</button>
+            </div>
             <p id="auth-error-msg" style="color: var(--accent-danger); font-size: 13px; display: none; margin-top: 12px;"></p>
         </div>
     </div>
@@ -926,7 +929,7 @@
         <div id="user-profile-container" style="display: none; padding: 12px 0; border-top: 1px solid var(--border-color); align-items: center; gap: 10px; margin-top: auto;">
             <img id="user-avatar" src="" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);">
             <div style="display: flex; flex-direction: column; overflow: hidden; max-width: 130px;">
-                <span id="user-name" style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">User</span>
+                <span id="user-name" style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);">User</span>
                 <span id="user-email" style="font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">email</span>
             </div>
             <span id="user-provider-badge" class="badge" style="margin-left: auto; font-size: 8px; padding: 2px 4px;">SSO</span>
@@ -960,6 +963,12 @@
                 </div>
             </div>
 
+            <div id="serverless-notice" style="display: none; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; color: var(--text-primary); font-size: 14px; line-height: 1.5;">
+                <strong>Serverless deployment.</strong> The alert engine, database, and Owl Speaks chat need a
+                persistent server, so telemetry, monitors, rules, and alert logs are unavailable here.
+                Run Pulse with Docker or on a VPS for full functionality.
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <span class="stat-label">Engine Uptime</span>
@@ -983,7 +992,7 @@
                 <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Telemetry Log</h3>
                 <div class="form-group">
                     <span class="form-label">Last Successful Evaluation Scan:</span>
-                    <p id="stat-lastcheck" style="font-size: 15px; color: #fff; font-family: monospace;">Never</p>
+                    <p id="stat-lastcheck" style="font-size: 15px; color: var(--text-primary); font-family: monospace;">Never</p>
                 </div>
                 <div class="form-group" id="daemon-error-container" style="display: none;">
                     <span class="form-label" style="color: var(--accent-danger);">Last Engine Error log:</span>
@@ -1147,7 +1156,7 @@
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; margin-bottom: 16px;">
-                    <span class="form-label" style="margin-bottom: 0; font-weight: 600; color: #fff;">Indicator Alerts Rules</span>
+                    <span class="form-label" style="margin-bottom: 0; font-weight: 600; color: var(--text-primary);">Indicator Alerts Rules</span>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="addNewRuleBlock()">Add Rule</button>
                 </div>
 
@@ -1174,6 +1183,7 @@
     <script>
         let currentConfig = null;
         let authEnabled = false;
+        let serverlessMode = false;
 
         function initTheme() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1337,15 +1347,16 @@
                 }
                 const status = await res.json();
                 authEnabled = status.auth_enabled;
-                
+                serverlessMode = !!status.serverless_mode;
+
                 if (authEnabled && !status.authorized) {
                     showLockscreen(true);
                     return;
                 }
-                
+
                 showLockscreen(false);
                 updateUserProfile(status.user);
-                
+
                 fetchStatus();
                 loadConfigData();
                 loadAlertLogs();
@@ -1373,19 +1384,28 @@
                         const divider = document.getElementById("auth-divider");
                         const ssoContainer = document.getElementById("auth-sso-container");
                         const subtitle = document.getElementById("auth-subtitle");
-                        
+                        const unavailable = document.getElementById("auth-unavailable");
+
                         pwForm.style.display = data.password_enabled ? "block" : "none";
                         googleBtn.style.display = data.google_enabled ? "flex" : "none";
                         templeBtn.style.display = data.temple_enabled ? "flex" : "none";
-                        
+
                         const hasSso = data.google_enabled || data.temple_enabled;
                         ssoContainer.style.display = hasSso ? "flex" : "none";
                         divider.style.display = (data.password_enabled && hasSso) ? "flex" : "none";
-                        
-                        if (data.password_enabled) {
+
+                        // Never leave the card with nothing to act on: if the server reports
+                        // no usable sign-in method, say so and offer a way to re-check.
+                        unavailable.style.display = (data.password_enabled || hasSso) ? "none" : "flex";
+
+                        if (data.password_enabled && hasSso) {
                             subtitle.innerText = "Enter password or sign in using SSO to unlock dashboard";
-                        } else {
+                        } else if (data.password_enabled) {
+                            subtitle.innerText = "Enter password to unlock dashboard";
+                        } else if (hasSso) {
                             subtitle.innerText = "Sign in using SSO to unlock dashboard";
+                        } else {
+                            subtitle.innerText = "No sign-in method is configured for this deployment.";
                         }
                     }
                 } catch(e) {
@@ -1407,6 +1427,9 @@
         });
         document.getElementById("temple-login-btn").addEventListener("click", () => {
             window.location.href = "/api/auth/temple/login";
+        });
+        document.getElementById("auth-reload-btn").addEventListener("click", () => {
+            window.location.reload();
         });
 
         async function performUnlock() {
@@ -1464,7 +1487,10 @@
         async function logoutUser() {
             await fetch("/api/auth/logout", {method: "POST"});
             updateUserProfile(null);
-            showLockscreen(true);
+            // Reload rather than locking unconditionally: initApp() checks whether auth
+            // is enabled at all, so deployments with no sign-in method configured land
+            // back on the dashboard instead of a lockscreen with no way through it.
+            window.location.reload();
         }
 
         // Helper to API requests (auth handles 401)
@@ -1514,7 +1540,9 @@
             try {
                 const data = await apiCall("/api/status");
                 if (!data) return;
-                
+
+                serverlessMode = !!data.serverless_mode;
+
                 if (data.auth_enabled && !data.authorized) {
                     showLockscreen(true);
                     return;
@@ -1529,17 +1557,29 @@
                 pulse.className = `pulse-dot ${engineStatus}`;
                 text.innerText = String(engineStatus).toUpperCase();
 
+                // Serverless deployments have no engine, database or persisted state.
+                // Show "—" rather than zeros, which would imply a healthy engine with
+                // nothing configured, and drop the engine button that cannot work.
+                const controls = document.getElementById("engine-controls");
+                document.getElementById("serverless-notice").style.display = serverlessMode ? "block" : "none";
+
+                if (serverlessMode) {
+                    ["stat-uptime", "stat-monitors", "stat-rules", "stat-dbsize", "stat-lastcheck"]
+                        .forEach(id => { document.getElementById(id).innerText = "—"; });
+                    controls.innerHTML = "";
+                    return;
+                }
+
                 // Update details
                 document.getElementById("stat-uptime").innerText = formatDuration(data.uptime_seconds);
                 document.getElementById("stat-monitors").innerText = data.active_monitors_count;
                 document.getElementById("stat-rules").innerText = data.active_rules_count;
                 document.getElementById("stat-dbsize").innerText = (data.sqlite_db_size_bytes / 1024).toFixed(1) + " KB";
-                document.getElementById("stat-lastcheck").innerText = data.last_check_time 
-                    ? new Date(data.last_check_time).toLocaleString() 
+                document.getElementById("stat-lastcheck").innerText = data.last_check_time
+                    ? new Date(data.last_check_time).toLocaleString()
                     : "Never";
 
                 // Update Control button
-                const controls = document.getElementById("engine-controls");
                 if (data.engine_status === "running") {
                     controls.innerHTML = `<button class="btn btn-secondary" onclick="toggleEngine('stop')">Pause Engine Monitor</button>`;
                 } else {
@@ -1571,10 +1611,20 @@
         }
 
         // Fetch logs
+        // Both loaders back onto the engine's SQLite database and config file, neither of
+        // which exists on a serverless deployment — the endpoints answer 503. Guard here
+        // rather than at each call site so tab switches and post-action refreshes are
+        // covered too, and say why the panel is empty instead of raising an error toast.
+        const SERVERLESS_UNAVAILABLE = "Unavailable on this serverless deployment — the alert engine needs a persistent server.";
+
         async function loadAlertLogs() {
+            const tbody = document.getElementById("alerts-tbody");
+            if (serverlessMode) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 32px;">${SERVERLESS_UNAVAILABLE}</td></tr>`;
+                return;
+            }
             try {
                 const data = await apiCall("/api/alerts");
-                const tbody = document.getElementById("alerts-tbody");
                 tbody.innerHTML = "";
 
                 if (!data || data.length === 0) {
@@ -1588,7 +1638,7 @@
                     row.innerHTML = `
                         <td style="font-weight: 600;">${item.symbol}</td>
                         <td style="font-family: monospace; font-size: 13px;">${item.rule_id}</td>
-                        <td style="font-weight: 700; color: #fff;">${item.value.toFixed(4)}</td>
+                        <td style="font-weight: 700; color: var(--text-primary);">${item.value.toFixed(4)}</td>
                         <td style="color: var(--text-secondary); font-size: 13px;">${item.bar_time}</td>
                         <td style="color: var(--text-secondary); font-size: 13px;">${dateObj.toLocaleString()}</td>
                     `;
@@ -1612,6 +1662,14 @@
 
         // Monitors Manager
         async function loadConfigData() {
+            if (serverlessMode) {
+                document.getElementById("monitors-list").innerHTML = `
+                    <div class="glass-panel" style="text-align: center; padding: 48px; color: var(--text-secondary);">
+                        <p>${SERVERLESS_UNAVAILABLE}</p>
+                    </div>
+                `;
+                return;
+            }
             try {
                 currentConfig = await apiCall("/api/config");
                 renderMonitorsList();

@@ -110,7 +110,11 @@ def test_sso_endpoints(tmp_path, mock_config_path):
     with open(mock_config_path, "w") as f:
         yaml.safe_dump(cfg, f)
         
-    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": ""}):
+    # Mock sign-in issues a session without contacting Google, so it is opt-in via
+    # ALLOW_MOCK_SSO. See test_mock_sso_rejected_without_opt_in for the default behaviour.
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "", "ALLOW_MOCK_SSO": "1"}):
+        client.cookies.clear()
+
         # 1. Check auth config endpoint
         response = client.get("/api/auth/config")
         assert response.status_code == 200
@@ -118,23 +122,90 @@ def test_sso_endpoints(tmp_path, mock_config_path):
         assert data["auth_enabled"] is True
         assert data["google_enabled"] is True
         assert data["password_enabled"] is False
-        
+
         # 2. Test Google SSO Login Redirect (Mock mode)
         response = client.get("/api/auth/google/login", follow_redirects=False)
         assert response.status_code == 307
         target_url = response.headers.get("location")
         assert "google-mock/login" in target_url
-        
+
+        # The callback is now bound to the state issued at login.
+        state = client.cookies.get("oauth_state")
+        assert state and state != "google_state"
+
         # 3. Test Google Mock Callback (Correct Email)
-        response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "test@gmail.com"}, follow_redirects=False)
+        response = client.get(
+            "/api/auth/google/callback",
+            params={"code": "mock_code", "state": state, "email": "test@gmail.com"},
+            follow_redirects=False,
+        )
         assert response.status_code == 307
         cookie_header = response.headers.get("set-cookie")
-        assert "session_token=" in cookie_header
-        
+        assert "pulse_session_token=" in cookie_header
+
         # 4. Test Google Mock Callback (Unauthorized Email)
-        response = client.get("/api/auth/google/callback", params={"code": "mock_code", "email": "hacker@gmail.com"})
+        response = client.get(
+            "/api/auth/google/callback",
+            params={"code": "mock_code", "state": state, "email": "hacker@gmail.com"},
+        )
         assert response.status_code == 403
-        
+
+
+def test_mock_sso_rejected_without_opt_in(tmp_path, mock_config_path):
+    """A caller must not be able to mint a session by claiming an arbitrary email.
+
+    Passing code=mock_code once skipped the token exchange and issued a session for
+    whatever email the query string carried, gated only by an optional allowlist.
+    """
+    src.web.CONFIG_PATH = mock_config_path
+    src.web.DB_PATH = str(tmp_path / "alerts.db")
+
+    import yaml
+    with open(mock_config_path, "r") as f:
+        cfg = yaml.safe_load(f)
+    cfg["google_sso"] = {
+        "client_id": "real-client-id.apps.googleusercontent.com",
+        "client_secret": "real-secret",
+        "redirect_uri": "",
+        "allowed_emails": "",  # no allowlist: the bypass had nothing else stopping it
+    }
+    with open(mock_config_path, "w") as f:
+        yaml.safe_dump(cfg, f)
+
+    env = {"DASHBOARD_PASSWORD": ""}
+    with patch.dict(os.environ, env, clear=False):
+        os.environ.pop("ALLOW_MOCK_SSO", None)
+        client.cookies.clear()
+
+        # Real credentials configured, so login must go to Google, not the mock page.
+        response = client.get("/api/auth/google/login", follow_redirects=False)
+        assert response.status_code == 307
+        assert "accounts.google.com" in response.headers["location"]
+
+        state = client.cookies.get("oauth_state")
+        assert state
+
+        # Even holding a legitimately issued state, a mock code must not be honoured.
+        response = client.get(
+            "/api/auth/google/callback",
+            params={"code": "mock_code", "state": state, "email": "attacker@evil.com"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 403
+        assert "pulse_session_token" not in response.cookies
+
+        # A forged state must fail before anything else is considered.
+        response = client.get(
+            "/api/auth/google/callback",
+            params={"code": "mock_code", "state": "forged", "email": "attacker@evil.com"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 403
+        assert "pulse_session_token" not in response.cookies
+
+        # The mock sign-in page must not be reachable.
+        assert client.get("/auth/google-mock/login").status_code == 404
+
 
 
 
