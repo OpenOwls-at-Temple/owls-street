@@ -479,19 +479,19 @@ export default function App() {
             alignItems: 'center',
             gap: 10,
             padding: '12px 0',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: '1px solid var(--border)',
             marginTop: 'auto',
             marginBottom: 10,
             overflow: 'hidden',
           }}>
             <img 
               src={user.avatar || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp'} 
-              style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }}
+              style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)' }}
               alt="avatar"
             />
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', maxWidth: 120 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'User'}</span>
-              <span style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email || ''}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || 'User'}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email || ''}</span>
             </div>
             {user.provider && (
               <span style={{
@@ -775,7 +775,7 @@ function AccountCard({ account }) {
 const sidebarStyles = {
   sidebar: {
     width: 260,
-    background: 'rgba(13, 18, 30, 0.95)',
+    background: 'var(--bg-surface)',
     borderRight: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',
@@ -805,7 +805,7 @@ const sidebarStyles = {
     fontSize: 20,
     fontWeight: 700,
     letterSpacing: '-0.5px',
-    background: 'linear-gradient(135deg, #fff, #9ca3af)',
+    background: 'linear-gradient(135deg, var(--text-primary), var(--text-secondary))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   },
@@ -831,7 +831,7 @@ const sidebarStyles = {
     transition: 'all 0.2s',
   },
   navItemActive: {
-    color: '#fff',
+    color: 'var(--text-primary)',
     border: '1px solid var(--border)',
     background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.02) 100%)',
     boxShadow: 'inset 0 0 12px rgba(255, 255, 255, 0.02)',
