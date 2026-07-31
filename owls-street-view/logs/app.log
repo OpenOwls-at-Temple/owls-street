@@ -2042,3 +2042,7 @@ alpaca.mode
 2026-07-25 14:51:49 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
 2026-07-25 14:51:53 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
 2026-07-25 14:51:54 [INFO] httpx: HTTP Request: GET http://localhost:8001/ "HTTP/1.1 200 OK"
+2026-07-30 21:27:37 [INFO] owls-street-view: Initializing Owls Street View Trading Dashboard...
+2026-07-30 21:27:37 [INFO] owls-street-view: Starting dashboard server at http://0.0.0.0:8080...
+2026-07-30 21:27:37 [INFO] src.web: AlpacaService initialized in web app.
+2026-07-30 21:27:37 [INFO] src.web: Loaded config from 'config/config.yaml' and initialized Alpaca Service.

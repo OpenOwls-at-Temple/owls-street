@@ -946,8 +946,9 @@ async def websocket_quotes(websocket: WebSocket):
         
     stock_stream: Optional[StockDataStream] = None
     option_stream: Optional[OptionDataStream] = None
-    stock_task: Optional[asyncio.Task] = None
-    option_task: Optional[asyncio.Task] = None
+    import threading
+    stock_thread: Optional[threading.Thread] = None
+    option_thread: Optional[threading.Thread] = None
 
     async def handle_quote(quote):
         msg = {
@@ -962,7 +963,7 @@ async def websocket_quotes(websocket: WebSocket):
             pass
 
     def subscribe_partitioned(symbols: list[str]) -> None:
-        nonlocal stock_stream, option_stream, stock_task, option_task
+        nonlocal stock_stream, option_stream, stock_thread, option_thread
         stocks = [s for s in symbols if not is_option_symbol(s)]
         opts = [s for s in symbols if is_option_symbol(s)]
         
@@ -970,14 +971,16 @@ async def websocket_quotes(websocket: WebSocket):
             if stock_stream is None:
                 stock_stream = StockDataStream(alpaca_service.api_key, alpaca_service.secret_key)
                 stock_stream.subscribe_quotes(handle_quote, *stocks)
-                stock_task = asyncio.create_task(stock_stream.run())
+                stock_thread = threading.Thread(target=stock_stream.run, daemon=True)
+                stock_thread.start()
             else:
                 stock_stream.subscribe_quotes(handle_quote, *stocks)
         if opts:
             if option_stream is None:
                 option_stream = OptionDataStream(alpaca_service.api_key, alpaca_service.secret_key)
                 option_stream.subscribe_quotes(handle_quote, *opts)
-                option_task = asyncio.create_task(option_stream.run())
+                option_thread = threading.Thread(target=option_stream.run, daemon=True)
+                option_thread.start()
             else:
                 option_stream.subscribe_quotes(handle_quote, *opts)
 
@@ -1005,9 +1008,6 @@ async def websocket_quotes(websocket: WebSocket):
                     stream.stop()
                 except Exception:
                     pass
-        for task in (stock_task, option_task):
-            if task is not None:
-                task.cancel()
 
 # ── Serve React Static Assets ────────────────────────────────────────────────
 
