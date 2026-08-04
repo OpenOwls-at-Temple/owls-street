@@ -1,74 +1,109 @@
+/*
+ * Design tokens.
+ *
+ * Neutral slate, one restrained accent. The accent is reserved for actions and selection so
+ * that the only loud colour on screen is the green/red of the numbers you actually scan —
+ * previously an indigo-to-violet gradient competed with them on buttons, pills, wordmarks and
+ * panel washes.
+ *
+ * Layers are opaque and step in a fixed order: canvas (deepest) → app → muted → surface →
+ * elevated, with `input` recessed below all of them. Translucent layers stacked over a
+ * gradient made every surface's real colour depend on whatever happened to be behind it,
+ * which is why panels read as flat and washed out. Hairline borders separate layers; shadows
+ * are a single scale and only lift things that genuinely float.
+ *
+ * Every text token clears WCAG AA (4.5:1) against every background token in both themes,
+ * checked against the worst pairing rather than the most flattering one.
+ */
+
 :root {
-  --bg-app: #0b0f19;
-  --bg-surface: rgba(17, 24, 39, 0.7);
-  --bg-elevated: rgba(31, 41, 55, 0.8);
-  --bg-input: rgba(0, 0, 0, 0.3);
-  --bg-canvas: #0b0f19;
-  --bg-muted: rgba(17, 24, 39, 0.5);
-  --bg-success-soft: rgba(16, 185, 129, 0.1);
-  --bg-danger-soft: rgba(239, 68, 68, 0.1);
-  --border: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-muted: #8a92a0;
+  /* Layers, deepest first. */
+  --bg-canvas: #0e1013;
+  --bg-app: #14161a;
+  --bg-muted: #171a1f;
+  --bg-surface: #1a1d22;
+  --bg-elevated: #22262d;
+  --bg-input: #101215;
+
+  --border: rgba(255, 255, 255, 0.09);
+  --border-subtle: rgba(255, 255, 255, 0.055);
+
+  --text-primary: #e9ebee;
+  --text-secondary: #a2a9b4;
+  --text-muted: #8b939f;
+
+  /* One accent. --accent fills, --accent-text is the tone that stays readable *as* text,
+     --accent-strong is a deeper indigo rather than the old violet. */
   --accent: #6366f1;
-  --accent-strong: #8b5cf6;
+  --accent-strong: #4f52d6;
   --accent-contrast: #ffffff;
-  --accent-soft: rgba(99, 102, 241, 0.15);
-  --accent-text: #a5b4fc;
+  --accent-soft: rgba(99, 102, 241, 0.14);
+  --accent-text: #a3adff;
+
   --success: #10b981;
-  --danger: #ef4444;
+  --danger: #f87171;
   --warning: #f59e0b;
-  --warning-border: rgba(245, 158, 11, 0.3);
-  --warning-soft: rgba(245, 158, 11, 0.1);
-  --shadow-accent: rgba(99, 102, 241, 0.25);
-  --shadow-overlay: rgba(0, 0, 0, 0.75);
-  --shadow-context: rgba(0, 0, 0, 0.45);
-  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.18);
-  --surface-grad-top: rgba(99, 102, 241, 0.08);
-  --surface-grad-bot: rgba(139, 92, 246, 0.02);
-  --app-grad-a: rgba(99, 102, 241, 0.16);
-  --app-grad-b: rgba(139, 92, 246, 0.08);
-  --grid-line: rgba(255, 255, 255, 0.03);
+  --bg-success-soft: rgba(16, 185, 129, 0.12);
+  --bg-danger-soft: rgba(248, 113, 113, 0.12);
+  --warning-soft: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.32);
+
+  /* One shadow scale. */
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-accent: 0 2px 10px rgba(99, 102, 241, 0.35);
+  --shadow-context: rgba(0, 0, 0, 0.5);
+
+  /* Neutral now: these used to tint whole panels indigo/violet. */
+  --surface-grad-top: rgba(255, 255, 255, 0.022);
+  --surface-grad-bot: rgba(255, 255, 255, 0);
+  --app-grad-a: rgba(255, 255, 255, 0.014);
+  --app-grad-b: rgba(255, 255, 255, 0);
+  --grid-line: rgba(255, 255, 255, 0.05);
 }
 
-/* Maintain light variables but style them with readable contrast or let users fallback safely */
 [data-theme='light'] {
-  --bg-app: #f5f6f9;
-  --bg-surface: rgba(255, 255, 255, 0.85);
-  --bg-elevated: rgba(255, 255, 255, 0.95);
-  --bg-input: rgba(0, 0, 0, 0.04);
   --bg-canvas: #ffffff;
-  --bg-muted: rgba(243, 244, 246, 0.8);
-  --bg-success-soft: rgba(16, 185, 129, 0.08);
-  --bg-danger-soft: rgba(239, 68, 68, 0.08);
-  --border: rgba(0, 0, 0, 0.08);
-  --border-subtle: rgba(0, 0, 0, 0.04);
-  --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --text-muted: #626b78;
+  --bg-app: #f3f4f6;
+  --bg-muted: #f0f1f3;
+  --bg-surface: #f8f9fa;
+  --bg-elevated: #ffffff;
+  --bg-input: #eaecef;
+
+  --border: rgba(16, 18, 22, 0.11);
+  --border-subtle: rgba(16, 18, 22, 0.06);
+
+  --text-primary: #16181d;
+  --text-secondary: #4a515b;
+  --text-muted: #5f6773;
+
   --accent: #4f46e5;
-  --accent-strong: #7c3aed;
+  --accent-strong: #4338ca;
   --accent-contrast: #ffffff;
   --accent-soft: rgba(79, 70, 229, 0.1);
-  --accent-text: #4338ca;
-  --success: #047857;
+  --accent-text: #3730a3;
+
+  /* Darkened for light surfaces: the dark theme's #10b981 and #f87171 sit near 2.5:1 here. */
+  --success: #04724f;
   --danger: #c62828;
-  --warning: #b45309;
-  --warning-border: rgba(245, 158, 11, 0.3);
-  --warning-soft: rgba(245, 158, 11, 0.08);
-  --shadow-accent: rgba(99, 102, 241, 0.1);
-  --shadow-overlay: rgba(0, 0, 0, 0.15);
-  --shadow-context: rgba(0, 0, 0, 0.08);
-  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.04);
-  --surface-grad-top: rgba(99, 102, 241, 0.02);
-  --surface-grad-bot: rgba(139, 92, 246, 0.01);
-  --app-grad-a: rgba(99, 102, 241, 0.04);
-  --app-grad-b: rgba(139, 92, 246, 0.02);
-  --grid-line: rgba(0, 0, 0, 0.025);
+  --warning: #92400e;
+  --bg-success-soft: rgba(4, 114, 79, 0.09);
+  --bg-danger-soft: rgba(198, 40, 40, 0.08);
+  --warning-soft: rgba(146, 64, 14, 0.08);
+  --warning-border: rgba(146, 64, 14, 0.28);
+
+  --shadow-soft: 0 1px 2px rgba(16, 18, 22, 0.06);
+  --shadow-card: 0 1px 2px rgba(16, 18, 22, 0.05), 0 6px 20px rgba(16, 18, 22, 0.05);
+  --shadow-overlay: 0 20px 50px rgba(16, 18, 22, 0.14), 0 2px 6px rgba(16, 18, 22, 0.06);
+  --shadow-accent: 0 2px 10px rgba(79, 70, 229, 0.22);
+  --shadow-context: rgba(16, 18, 22, 0.1);
+
+  --surface-grad-top: rgba(16, 18, 22, 0.014);
+  --surface-grad-bot: rgba(16, 18, 22, 0);
+  --app-grad-a: rgba(16, 18, 22, 0.01);
+  --app-grad-b: rgba(16, 18, 22, 0);
+  --grid-line: rgba(16, 18, 22, 0.05);
 }
 
 html,
@@ -94,15 +129,20 @@ body,
   width: 6px;
   height: 6px;
 }
+/* Themed: a white thumb on a white track is invisible in light mode. */
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--text-muted);
+}
+* {
+  scrollbar-color: var(--border) transparent;
+  scrollbar-width: thin;
 }
 
 /* Animated Sleeping Owl & Zzz Animations */
