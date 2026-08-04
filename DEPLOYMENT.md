@@ -99,6 +99,26 @@ mounts the app under it, which strips the prefix for routing and leaves the app'
 table identical to the copy that serves from a domain root. Leave it **unset** for local
 development and for a project-per-app deployment, where Pulse already owns its root path.
 
+### One sign-in covers both dashboards
+
+Signing in to the view also signs you in to Pulse. Pulse checks its own session cookie
+(`pulse_session_token`) and then the view's (`session_token`), which works because
+`auth_helper.py` is identical in both apps and `SSO_JWT_SECRET` comes from the same
+environment — a token the view minted verifies in Pulse without extending trust to anything
+new. Verification itself is unchanged: an unverifiable token, or one signed with a different
+secret, is rejected under either cookie name.
+
+This matters most for the view's **Pulse Alerts** tab, which embeds the Pulse dashboard in
+an iframe. Without it, an already-signed-in user met Pulse's own lockscreen there, and its
+Google button rendered a `403` — Google refuses to serve its consent screen inside a frame.
+Sign-in redirects now break out of the iframe for the same reason.
+
+The cookie names stay distinct so that two apps on one domain cannot overwrite each other's
+session. On separate domains the browser never sends the view's cookie to Pulse, so the
+fallback is inert and each app signs in on its own.
+
+Sessions last 30 days.
+
 ### Owl Speaks on Vercel
 
 Chat is one outbound call to an LLM, so it needs no persistent process and works here — but
