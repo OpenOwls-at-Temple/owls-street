@@ -592,6 +592,10 @@ export default function OwlSpeaksChat({ symbols = [] }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
               {/* Message History */}
               <div style={styles.chatHistory}>
+                {/* Anchors the conversation to the bottom so a short thread meets the
+                    composer instead of leaving a large void beneath it. `margin-top: auto`
+                    collapses once the thread overflows, so scrolling still behaves. */}
+                <div style={{ marginTop: 'auto' }} />
                 {chatHistory.map((msg, index) => {
                   const isUser = msg.role === 'user';
                   return (
