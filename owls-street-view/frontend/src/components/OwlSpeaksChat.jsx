@@ -5,12 +5,35 @@ import '../utils/markdown.css';
 // Unique ID Generator
 const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 
+/** The owl glyph, shared by the launcher, the header and every assistant message. */
+function OwlMark({ size = 18 }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ width: size, height: size, display: 'block' }}
+    >
+      <path d="M12 2.5C6.9 2.5 4.5 4.8 4.5 8c0 4.2 2.9 10.2 7.5 12.5 4.6-2.3 7.5-8.3 7.5-12.5 0-3.2-2.4-5.5-7.5-5.5z" />
+      <circle cx="9.2" cy="9" r="2.3" />
+      <circle cx="14.8" cy="9" r="2.3" />
+      <circle cx="9.2" cy="9" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="14.8" cy="9" r="0.75" fill="currentColor" stroke="none" />
+      <path d="M12 11.6l-1.2 2 1.2.8 1.2-.8-1.2-2z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export default function OwlSpeaksChat({ symbols = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [message, setMessage] = useState('');
   const [attachedImages, setAttachedImages] = useState([]); // Base64 data URIs
   const [isLoading, setIsLoading] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
 
   // Draggable and Resizable window state
   const [isExpanded, setIsExpanded] = useState(false);
@@ -197,11 +220,13 @@ export default function OwlSpeaksChat({ symbols = [] }) {
     }
   };
 
-  const handleSend = async (e) => {
+  // `presetText` lets the starter prompts send in one click instead of only filling the box.
+  const handleSend = async (e, presetText) => {
     if (e) e.preventDefault();
-    if ((!message.trim() && attachedImages.length === 0) || isLoading) return;
+    const outgoing = presetText ?? message;
+    if ((!outgoing.trim() && attachedImages.length === 0) || isLoading) return;
 
-    const userMsg = message;
+    const userMsg = outgoing;
     const currentImages = [...attachedImages];
     setMessage('');
     setAttachedImages([]);
@@ -399,6 +424,19 @@ export default function OwlSpeaksChat({ symbols = [] }) {
 
   const formatMessage = (text) => renderMarkdown(text);
 
+  // Suggestions follow the attached context, so they are useful rather than decorative.
+  const starterPrompts = selectedSymbol
+    ? [
+        `What is the technical setup for ${selectedSymbol}?`,
+        `Is ${selectedSymbol} overbought or oversold right now?`,
+        `Any recent news moving ${selectedSymbol}?`,
+      ]
+    : [
+        'Explain RSI and how to read it',
+        'What does a death cross signal?',
+        'Compare ETFs with mutual funds',
+      ];
+
   return (
     <>
       {/* Floating Trigger Button */}
@@ -445,58 +483,73 @@ export default function OwlSpeaksChat({ symbols = [] }) {
               userSelect: 'none',
             }}
           >
-            <div style={styles.headerLeft}>
-              <button
-                onClick={() => setShowHistory((prev) => !prev)}
-                style={{ ...styles.iconBtn, color: showHistory ? 'var(--accent)' : 'var(--text-primary)' }}
-                title="Conversation History"
-              >
-                <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
-                </svg>
-              </button>
-              <div style={styles.headerInfo}>
-                <div style={styles.statusDot}></div>
-                <span style={styles.headerTitle}>Owl Speaks GPT</span>
+            {/* Row 1 — identity and window controls. Six controls previously shared one row,
+                which is why the title, the context select and the actions all felt crammed. */}
+            <div style={styles.headerTopRow}>
+              <div style={styles.headerLeft}>
+                <button
+                  onClick={() => setShowHistory((prev) => !prev)}
+                  style={{ ...styles.iconBtn, color: showHistory ? 'var(--accent-text)' : 'var(--text-secondary)' }}
+                  title="Conversation history"
+                >
+                  <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" style={{ width: 17, height: 17 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                  </svg>
+                </button>
+                <div style={styles.avatar} aria-hidden="true">
+                  <OwlMark size={17} />
+                </div>
+                <div style={styles.identity}>
+                  <span style={styles.headerTitle}>Owl Speaks</span>
+                  <span style={styles.headerSub}>
+                    <span style={styles.statusDot} />
+                    {selectedSymbol ? `Analysing ${selectedSymbol}` : 'Ready'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={styles.headerActions}>
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                  style={styles.iconBtnMuted}
+                  title={isExpanded ? 'Collapse window' : 'Expand window'}
+                >
+                  {isExpanded ? (
+                    <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" style={{ width: 15, height: 15 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 9h6v6M9 15h6V9M15 15l-6-6M9 15l6-6" />
+                    </svg>
+                  ) : (
+                    <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" style={{ width: 15, height: 15 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h6.5m-6.5 0v6.5m0-6.5L10.5 10.5m9.75 9.75h-6.5m6.5 0v-6.5m0 6.5L13.5 13.5" />
+                    </svg>
+                  )}
+                </button>
+                <button onClick={() => setIsOpen(false)} style={styles.iconBtnMuted} title="Close">
+                  <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" style={{ width: 16, height: 16 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
               </div>
             </div>
-            
-            {/* Symbol Context Selector */}
-            <select
-              value={selectedSymbol}
-              onChange={(e) => updateThreadSymbol(e.target.value)}
-              style={styles.symbolSelector}
-            >
-              <option value="">No Context</option>
-              {symbols.map((sym) => (
-                <option key={sym} value={sym}>
-                  Context: {sym}
-                </option>
-              ))}
-            </select>
 
-            <div style={styles.headerActions}>
-              <button onClick={clearChatHistory} style={styles.clearBtn} title="Clear history">
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsExpanded((prev) => !prev)}
-                style={styles.expandToggleBtn}
-                title={isExpanded ? "Collapse window" : "Expand window"}
+            {/* Row 2 — conversation settings, which are a different kind of control. */}
+            <div style={styles.headerBottomRow}>
+              <select
+                value={selectedSymbol}
+                onChange={(e) => updateThreadSymbol(e.target.value)}
+                style={styles.symbolSelector}
+                title="Attach a symbol's live indicators to your questions"
               >
-                {isExpanded ? (
-                  <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 14, height: 14 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 9h6v6M9 15h6V9M15 15l-6-6M9 15l6-6" />
-                  </svg>
-                ) : (
-                  <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 14, height: 14 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h6.5m-6.5 0v6.5m0-6.5L10.5 10.5m9.75 9.75h-6.5m6.5 0v-6.5m0 6.5L13.5 13.5" />
-                  </svg>
-                )}
-              </button>
-              <button onClick={() => setIsOpen(false)} style={styles.closeBtn} title="Close">
-                &times;
+                <option value="">No context</option>
+                {symbols.map((sym) => (
+                  <option key={sym} value={sym}>
+                    Context: {sym}
+                  </option>
+                ))}
+              </select>
+              <button onClick={clearChatHistory} style={styles.clearBtn} title="Clear this conversation">
+                Clear
               </button>
             </div>
           </div>
@@ -539,35 +592,76 @@ export default function OwlSpeaksChat({ symbols = [] }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
               {/* Message History */}
               <div style={styles.chatHistory}>
-                {chatHistory.map((msg, index) => (
-                  <div
-                    key={index}
-                    // md-on-accent re-points the markdown colours at the bubble's own text
-                    // colour; on the accent gradient the themed ones have no contrast.
-                    className={msg.role === 'user' ? 'md-on-accent' : undefined}
-                    style={{
-                      ...styles.message,
-                      ...(msg.role === 'user' ? styles.userMessage : styles.assistantMessage),
-                    }}
-                  >
-                    {formatMessage(msg.content)}
-                    {/* Render message images if they exist */}
-                    {msg.images && msg.images.map((img, i) => (
-                      <img
-                        key={i}
-                        src={img}
-                        alt="Attached Upload"
-                        style={{ maxWidth: '100%', borderRadius: 8, marginTop: 8, border: '1px solid var(--border)' }}
-                      />
+                {chatHistory.map((msg, index) => {
+                  const isUser = msg.role === 'user';
+                  return (
+                    <div key={index} style={styles.messageRow(isUser)}>
+                      {/* An avatar on the assistant side gives the answers an author. Without
+                          it a reply was just a grey slab with nothing marking who spoke. */}
+                      {!isUser && (
+                        <div style={styles.msgAvatar} aria-hidden="true">
+                          <OwlMark size={15} />
+                        </div>
+                      )}
+                      <div
+                        // md-on-accent re-points the markdown colours at the bubble's own text
+                        // colour; on the accent fill the themed ones have no contrast.
+                        className={isUser ? 'md-on-accent' : undefined}
+                        style={{
+                          ...styles.message,
+                          ...(isUser ? styles.userMessage : styles.assistantMessage),
+                        }}
+                      >
+                        {formatMessage(msg.content)}
+                        {msg.images && msg.images.map((img, i) => (
+                          <img key={i} src={img} alt="Attached upload" style={styles.messageImage} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Starter prompts, shown while the conversation is still just the greeting.
+                    This is what the empty panel was missing: it said nothing about what Owl
+                    Speaks could be asked, and left most of the window blank. */}
+                {chatHistory.length <= 1 && !isLoading && (
+                  <div style={styles.starterWrap}>
+                    <div style={styles.starterLabel}>Try asking</div>
+                    {starterPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        style={styles.starterChip}
+                        onClick={() => handleSend(null, prompt)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--accent)';
+                          e.currentTarget.style.background = 'var(--accent-soft)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--border)';
+                          e.currentTarget.style.background = 'var(--bg-elevated)';
+                        }}
+                      >
+                        {prompt}
+                      </button>
                     ))}
+                    <div style={styles.starterHint}>
+                      Paste a chart screenshot into the box below and Owl Speaks will read it.
+                    </div>
                   </div>
-                ))}
+                )}
+
                 {isLoading && (
-                  <div style={{ ...styles.message, ...styles.assistantMessage }}>
-                    <div style={styles.loader}>
-                      <div style={styles.loaderDot}></div>
-                      <div style={styles.loaderDot}></div>
-                      <div style={styles.loaderDot}></div>
+                  <div style={styles.messageRow(false)}>
+                    <div style={styles.msgAvatar} aria-hidden="true">
+                      <OwlMark size={15} />
+                    </div>
+                    <div style={{ ...styles.message, ...styles.assistantMessage }}>
+                      <div style={styles.loader}>
+                        <span style={styles.loaderDot} />
+                        <span style={{ ...styles.loaderDot, animationDelay: '0.16s' }} />
+                        <span style={{ ...styles.loaderDot, animationDelay: '0.32s' }} />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -593,41 +687,65 @@ export default function OwlSpeaksChat({ symbols = [] }) {
 
               {/* Input Area */}
               <form onSubmit={handleSend} style={styles.inputArea}>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  style={styles.attachButton}
-                  title="Upload image"
+                {/* Attach and send sit inside one bordered field, so the composer reads as a
+                    single control instead of three loose widgets on a bar. */}
+                <div
+                  style={{
+                    ...styles.composer,
+                    borderColor: composerFocused ? 'var(--accent)' : 'var(--border)',
+                    boxShadow: composerFocused ? '0 0 0 3px var(--accent-soft)' : 'none',
+                  }}
                 >
-                  <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.5l-10.5 10.5a1.5 1.5 0 11-2.12-2.12l8.83-8.83m-6.02 6.02l-1.07-1.07" />
-                  </svg>
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={(e) => handleImageFiles(e.target.files)}
-                  accept="image/*"
-                  multiple
-                  style={{ display: 'none' }}
-                />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={styles.attachButton}
+                    title="Attach an image"
+                  >
+                    <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" style={{ width: 17, height: 17 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.5l-10.5 10.5a1.5 1.5 0 11-2.12-2.12l8.83-8.83m-6.02 6.02l-1.07-1.07" />
+                    </svg>
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={(e) => handleImageFiles(e.target.files)}
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                  />
 
-                <textarea
-                  ref={inputRef}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyDownInput}
-                  onPaste={handlePaste}
-                  placeholder="Ask Owl Speaks (paste chart / screenshots)..."
-                  rows={1}
-                  style={styles.inputField}
-                />
+                  <textarea
+                    ref={inputRef}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDownInput}
+                    onPaste={handlePaste}
+                    onFocus={() => setComposerFocused(true)}
+                    onBlur={() => setComposerFocused(false)}
+                    placeholder="Ask about a setup, or paste a chart…"
+                    rows={1}
+                    style={styles.inputField}
+                  />
 
-                <button type="submit" disabled={isLoading} style={styles.sendButton}>
-                  <svg fill="currentColor" viewBox="0 0 24 24" style={{ width: 16, height: 16 }}>
-                    <path d="M3.4 20.4l17.45-7.48c.81-.35.81-1.49 0-1.84L3.4 3.6a.996.996 0 00-1.41.92l.01 5.37c0 .5.37.93.87.98l12.73 1.13c.27.02.27.42 0 .44L2.87 13.57a.993.993 0 00-.87.98l-.01 5.37c-.01.69.65 1.2 1.41.48z" />
-                  </svg>
-                </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading || (!message.trim() && attachedImages.length === 0)}
+                    style={{
+                      ...styles.sendButton,
+                      opacity: isLoading || (!message.trim() && attachedImages.length === 0) ? 0.45 : 1,
+                      cursor: isLoading || (!message.trim() && attachedImages.length === 0) ? 'default' : 'pointer',
+                    }}
+                    title="Send (Enter)"
+                  >
+                    <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24" style={{ width: 16, height: 16 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
+                  </button>
+                </div>
+                <div style={styles.composerHint}>
+                  <kbd style={styles.kbd}>Enter</kbd> to send · <kbd style={styles.kbd}>Shift</kbd>+<kbd style={styles.kbd}>Enter</kbd> for a new line
+                </div>
               </form>
             </div>
           </div>
@@ -664,10 +782,8 @@ const styles = {
     width: 440,
     height: 580,
     background: 'var(--bg-surface)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid var(--border)',
-    borderRadius: 16,
+    borderRadius: 14,
     boxShadow: 'var(--shadow-overlay)',
     display: 'flex',
     flexDirection: 'column',
@@ -676,89 +792,122 @@ const styles = {
   },
   chatHeader: {
     display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    padding: '12px 14px',
+    background: 'var(--bg-muted)',
+    borderBottom: '1px solid var(--border)',
+  },
+  headerTopRow: {
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 16px',
-    background: 'var(--bg-muted)',
-    borderBottom: '1px solid var(--border-subtle)',
+    gap: 10,
+  },
+  headerBottomRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
+    gap: 9,
+    minWidth: 0,
+  },
+  avatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    background: 'var(--accent)',
+    color: 'var(--accent-contrast)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  identity: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+    minWidth: 0,
   },
   iconBtn: {
     background: 'transparent',
     border: 'none',
     cursor: 'pointer',
     outline: 'none',
-    padding: 0,
+    padding: 4,
+    borderRadius: 7,
     display: 'flex',
     alignItems: 'center',
+    transition: 'color 0.15s',
   },
-  headerInfo: {
+  iconBtnMuted: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    outline: 'none',
+    padding: 5,
+    borderRadius: 7,
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    transition: 'color 0.15s, background 0.15s',
   },
   statusDot: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     borderRadius: '50%',
     background: 'var(--success)',
-    boxShadow: '0 0 8px var(--success)',
+    flexShrink: 0,
   },
   headerTitle: {
     fontSize: 14,
     fontWeight: 700,
     color: 'var(--text-primary)',
+    letterSpacing: '-0.01em',
+    lineHeight: 1.2,
+  },
+  headerSub: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    lineHeight: 1.3,
   },
   symbolSelector: {
     background: 'var(--bg-input)',
     color: 'var(--text-primary)',
     border: '1px solid var(--border)',
-    borderRadius: 6,
-    padding: '4px 8px',
-    fontSize: 11,
+    borderRadius: 8,
+    padding: '5px 9px',
+    fontSize: 11.5,
+    fontWeight: 500,
     outline: 'none',
-    maxWidth: 120,
     cursor: 'pointer',
+    flex: 1,
+    minWidth: 0,
   },
   headerActions: {
     display: 'flex',
     alignItems: 'center',
-    gap: 12,
+    gap: 2,
+    flexShrink: 0,
   },
   clearBtn: {
     background: 'transparent',
-    color: 'var(--text-secondary)',
+    color: 'var(--text-muted)',
     border: 'none',
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: 500,
     cursor: 'pointer',
     outline: 'none',
-  },
-  closeBtn: {
-    background: 'transparent',
-    color: 'var(--text-primary)',
-    border: 'none',
-    fontSize: 20,
-    cursor: 'pointer',
-    outline: 'none',
-    lineHeight: '1',
-  },
-  expandToggleBtn: {
-    background: 'transparent',
-    color: 'var(--text-secondary)',
-    border: 'none',
-    cursor: 'pointer',
-    outline: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 2,
-    opacity: 0.8,
-    transition: 'opacity 0.2s',
+    padding: '5px 4px',
+    flexShrink: 0,
   },
   historyDrawer: {
     position: 'absolute',
@@ -843,9 +992,28 @@ const styles = {
     flexDirection: 'column',
     gap: 14,
   },
+  messageRow: (isUser) => ({
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 8,
+    justifyContent: isUser ? 'flex-end' : 'flex-start',
+  }),
+  msgAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    color: 'var(--accent-text)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 2,
+  },
   message: {
-    padding: '11px 14px',
-    borderRadius: 14,
+    padding: '10px 13px',
+    borderRadius: 12,
     fontSize: 13,
     lineHeight: 1.6,
     // `break-word` alone splits long tickers and OCC symbols mid-token; this only breaks
@@ -854,24 +1022,63 @@ const styles = {
     minWidth: 0,
   },
   userMessage: {
-    alignSelf: 'flex-end',
     // A question is short; keeping it narrow makes the conversation easy to scan.
-    maxWidth: '82%',
-    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
+    maxWidth: '84%',
+    // A flat accent fill rather than a gradient — the gradient was one of several places
+    // competing with the numbers for attention.
+    background: 'var(--accent)',
     color: 'var(--accent-contrast)',
-    borderBottomRightRadius: 3,
-    boxShadow: 'var(--shadow-soft)',
+    borderTopRightRadius: 4,
   },
   assistantMessage: {
-    alignSelf: 'stretch',
-    // Analytical answers carry headings, lists and comparison tables. Capping these at 85%
-    // squeezed tables into a narrow scroll strip for no benefit — nothing sits beside them.
-    maxWidth: '100%',
+    // Analytical answers carry headings, lists and comparison tables, so they take the
+    // column. Capping them squeezed tables into a narrow scroll strip for no benefit.
+    flex: 1,
+    minWidth: 0,
     background: 'var(--bg-elevated)',
     color: 'var(--text-primary)',
     border: '1px solid var(--border)',
-    borderBottomLeftRadius: 3,
-    boxShadow: 'var(--shadow-card)',
+    borderTopLeftRadius: 4,
+  },
+  messageImage: {
+    maxWidth: '100%',
+    borderRadius: 9,
+    marginTop: 8,
+    border: '1px solid var(--border)',
+    display: 'block',
+  },
+  starterWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    padding: '4px 0 0 32px',
+  },
+  starterLabel: {
+    fontSize: 10.5,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'var(--text-muted)',
+    marginBottom: 2,
+  },
+  starterChip: {
+    textAlign: 'left',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    borderRadius: 9,
+    color: 'var(--text-primary)',
+    padding: '8px 11px',
+    fontSize: 12.5,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    outline: 'none',
+    transition: 'border-color 0.15s, background 0.15s',
+  },
+  starterHint: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    lineHeight: 1.45,
+    marginTop: 4,
   },
   previewContainer: {
     display: 'flex',
@@ -916,63 +1123,94 @@ const styles = {
   },
   inputArea: {
     display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
+    flexDirection: 'column',
+    gap: 6,
+    padding: '10px 12px 11px',
     background: 'var(--bg-muted)',
-    borderTop: '1px solid var(--border-subtle)',
+    borderTop: '1px solid var(--border)',
+  },
+  composer: {
+    display: 'flex',
+    alignItems: 'flex-end',
+    gap: 6,
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    padding: 5,
+    transition: 'border-color 0.15s, box-shadow 0.15s',
   },
   attachButton: {
     background: 'transparent',
-    color: 'var(--text-secondary)',
+    color: 'var(--text-muted)',
     border: 'none',
+    borderRadius: 8,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
     outline: 'none',
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
+    flexShrink: 0,
   },
   inputField: {
     flex: 1,
-    background: 'var(--bg-input)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '8px 12px',
+    background: 'transparent',
+    border: 'none',
+    padding: '7px 2px',
     color: 'var(--text-primary)',
     fontSize: 13,
     outline: 'none',
     resize: 'none',
-    height: 36,
+    maxHeight: 96,
+    minHeight: 20,
     fontFamily: 'inherit',
-    lineHeight: '1.4',
+    lineHeight: 1.45,
   },
   sendButton: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 8,
-    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
+    background: 'var(--accent)',
     color: 'var(--accent-contrast)',
     border: 'none',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: 'var(--shadow-soft)',
     outline: 'none',
+    flexShrink: 0,
+    transition: 'opacity 0.15s',
+  },
+  composerHint: {
+    fontSize: 10.5,
+    color: 'var(--text-muted)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 3,
+    paddingLeft: 2,
+  },
+  kbd: {
+    fontFamily: 'inherit',
+    fontSize: 10,
+    fontWeight: 600,
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    borderRadius: 4,
+    padding: '1px 4px',
+    color: 'var(--text-secondary)',
   },
   loader: {
     display: 'flex',
     alignItems: 'center',
     gap: 4,
-    padding: '4px 8px',
+    padding: '3px 2px',
   },
   loaderDot: {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: 'var(--text-secondary)',
+    background: 'var(--text-muted)',
+    display: 'inline-block',
     animation: 'react-pulse-loader 1.4s infinite ease-in-out both',
   },
 };
