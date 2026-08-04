@@ -80,6 +80,23 @@ const s = {
   },
   chainItemSym: { color: 'var(--accent)', fontWeight: 600, wordBreak: 'break-all', flex: 1 },
   hint: { fontSize: 11, color: 'var(--text-muted)', padding: '10px 20px 0', lineHeight: 1.4 },
+  rowRight: { display: 'flex', alignItems: 'center', gap: 4 },
+  removeBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-muted)',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: 17,
+    lineHeight: 1,
+    padding: '3px 6px',
+    marginLeft: 6,
+    transition: 'color 0.2s, background 0.2s',
+  },
+  empty: {
+    padding: '20px', fontSize: 12, color: 'var(--text-muted)',
+    textAlign: 'center', lineHeight: 1.5,
+  },
   right: { textAlign: 'right' },
   price: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' },
   change: (pct) => ({ fontSize: 12, fontWeight: 500, color: pct >= 0 ? 'var(--success)' : 'var(--danger)' }),
@@ -166,6 +183,21 @@ export default function Watchlist({ selectedSymbol, onSelectSymbol, collapsed, o
     const sym = (symRaw ?? inputVal).trim().toUpperCase();
     if (sym && !symbols.includes(sym)) setSymbols((p) => [...p, sym]);
     if (!symRaw) setInputVal('');
+  }
+
+  function removeSymbol(sym) {
+    const index = symbols.indexOf(sym);
+    if (index === -1) return;
+
+    const next = symbols.filter((s) => s !== sym);
+    setSymbols(next);
+
+    // Removing the symbol currently being charted would otherwise leave the chart, order
+    // panel and Owl Speaks pointed at something no longer in the list. Fall through to its
+    // neighbour instead, and leave the selection alone when nothing is left to move to.
+    if (sym === selectedSymbol && next.length) {
+      onSelectSymbol(next[Math.min(index, next.length - 1)]);
+    }
   }
 
   async function loadOptionMatrix() {
@@ -331,6 +363,11 @@ export default function Watchlist({ selectedSymbol, onSelectSymbol, collapsed, o
       </div>
 
       <div style={{ maxHeight: 350, overflowY: 'auto' }}>
+        {!symbols.length && (
+          <div style={s.empty}>
+            Watchlist is empty.<br />Add a ticker or option contract above.
+          </div>
+        )}
         {symbols.map((sym) => {
           const snap = snapshots[sym];
           const live = liveQuotes[sym];
@@ -343,13 +380,36 @@ export default function Watchlist({ selectedSymbol, onSelectSymbol, collapsed, o
           return (
             <div key={sym} style={s.row(selectedSymbol === sym)} onClick={() => onSelectSymbol(sym)}>
               <span style={s.symbol}>{sym}</span>
-              <div style={s.right}>
-                <div style={s.price}>{price ? `$${Number(price).toFixed(2)}` : '—'}</div>
-                {changePct !== null && (
-                  <div style={s.change(changePct)}>
-                    {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
-                  </div>
-                )}
+              <div style={s.rowRight}>
+                <div style={s.right}>
+                  <div style={s.price}>{price ? `$${Number(price).toFixed(2)}` : '—'}</div>
+                  {changePct !== null && (
+                    <div style={s.change(changePct)}>
+                      {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  style={s.removeBtn}
+                  title={`Remove ${sym} from watchlist`}
+                  aria-label={`Remove ${sym} from watchlist`}
+                  // The row itself selects the symbol, so removal must not bubble into it.
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeSymbol(sym);
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--danger)';
+                    e.currentTarget.style.background = 'var(--bg-elevated)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  ×
+                </button>
               </div>
             </div>
           );
