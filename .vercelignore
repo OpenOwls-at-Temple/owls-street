@@ -1,0 +1,45 @@
+# Keep the upload — and the api/pulse.py bundle, which globs the whole Pulse app — free of
+# local artifacts and anything a serverless function never runs. `vercel` from the CLI does
+# not read .gitignore, so virtualenvs must be named here explicitly or they are uploaded.
+.venv/
+venv/
+**/.venv/
+**/venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+**/.pytest_cache/
+
+node_modules/
+**/node_modules/
+
+# Test suites and their fixtures
+**/tests/
+owls-street-view/test_logs.py
+
+# Local runtime state. Pulse's alert database lives on a persistent volume in the container
+# deployment and in /tmp here; a committed copy would only mislead.
+**/data/
+**/logs/
+owls-street-pulse/config/config.yaml.example
+
+# Container and CI scaffolding
+Dockerfile
+**/Dockerfile
+.dockerignore
+**/.dockerignore
+docker-compose.yml
+**/docker-compose.yml
+docker-entrypoint.sh
+**/docker-entrypoint.sh
+render.yaml
+.github/
+
+# Documentation
+*.md
+**/*.md
+ai_specs/
+**/ai_specs/
+.DS_Store
+**/.DS_Store

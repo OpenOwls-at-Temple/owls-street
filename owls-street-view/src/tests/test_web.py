@@ -213,3 +213,64 @@ def test_mock_sso_is_gated(tmp_path, mock_config_path):
 
 
 
+
+
+# ── Pulse reachability probe ───────────────────────────────────────────────────
+#
+# /api/status is polled every 5 seconds by the dashboard, and on a combined Vercel
+# deployment Pulse is another function on the same domain — so the probe behind it is
+# cached, and its timeout has to survive a serverless cold start.
+
+@pytest.fixture(autouse=True)
+def clear_pulse_probe_cache():
+    src.web._pulse_probe_cache.update({"url": None, "online": False, "checked_at": 0.0})
+    yield
+
+
+def test_pulse_probe_reports_online_on_200():
+    with patch("src.web.httpx.get") as mock_get:
+        mock_get.return_value = MagicMock(status_code=200)
+        assert src.web._probe_pulse("http://pulse.example.com") is True
+
+
+def test_pulse_probe_reports_offline_on_error():
+    with patch("src.web.httpx.get", side_effect=Exception("connection refused")):
+        assert src.web._probe_pulse("http://pulse.example.com") is False
+
+
+def test_pulse_probe_reports_offline_without_a_url():
+    with patch("src.web.httpx.get") as mock_get:
+        assert src.web._probe_pulse("") is False
+        assert mock_get.call_count == 0
+
+
+def test_pulse_probe_is_cached():
+    with patch("src.web.httpx.get") as mock_get:
+        mock_get.return_value = MagicMock(status_code=200)
+        for _ in range(5):
+            src.web._probe_pulse("http://pulse.example.com")
+        assert mock_get.call_count == 1
+
+
+def test_pulse_probe_refreshes_when_the_url_changes():
+    with patch("src.web.httpx.get") as mock_get:
+        mock_get.return_value = MagicMock(status_code=200)
+        src.web._probe_pulse("http://pulse.example.com")
+        src.web._probe_pulse("http://other.example.com/pulse")
+        assert mock_get.call_count == 2
+
+
+def test_pulse_probe_allows_for_a_cold_start():
+    """A 1-second budget reported a healthy serverless Pulse as offline."""
+    with patch("src.web.httpx.get") as mock_get:
+        mock_get.return_value = MagicMock(status_code=200)
+        src.web._probe_pulse("http://pulse.example.com")
+        assert mock_get.call_args.kwargs["timeout"] >= 5.0
+
+
+def test_pulse_probe_follows_redirects():
+    """Pulse under /pulse redirects /pulse to /pulse/, which is not an outage."""
+    with patch("src.web.httpx.get") as mock_get:
+        mock_get.return_value = MagicMock(status_code=200)
+        src.web._probe_pulse("http://view.example.com/pulse")
+        assert mock_get.call_args.kwargs["follow_redirects"] is True

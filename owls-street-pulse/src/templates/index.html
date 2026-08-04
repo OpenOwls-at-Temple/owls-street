@@ -964,8 +964,9 @@
             </div>
 
             <div id="serverless-notice" style="display: none; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; color: var(--text-primary); font-size: 14px; line-height: 1.5;">
-                <strong>Serverless deployment.</strong> The alert engine, database, and Owl Speaks chat need a
-                persistent server, so telemetry, monitors, rules, and alert logs are unavailable here.
+                <strong>Serverless deployment.</strong> The alert engine and its database need a persistent
+                server, so telemetry, monitors, rules, and alert logs are unavailable here.
+                <span id="serverless-chat-note"></span>
                 Run Pulse with Docker or on a VPS for full functionality.
             </div>
 
@@ -1329,10 +1330,14 @@
             }
         }
 
+        // This dashboard is served both at the domain root (its own Vercel project, Docker,
+        // a VPS) and under /pulse (one Vercel project hosting both apps). Every same-origin
+        // server path must go through here, or it resolves against the view app instead.
         function resolveUrl(url) {
             if (url.startsWith("http://") || url.startsWith("https://")) return url;
-            if (window.location.pathname.startsWith("/pulse") && url.startsWith("/api/")) {
-                return "/pulse" + url;
+            const prefix = window.location.pathname.startsWith("/pulse") ? "/pulse" : "";
+            if (prefix && (url.startsWith("/api/") || url.startsWith("/auth/"))) {
+                return prefix + url;
             }
             return url;
         }
@@ -1375,7 +1380,7 @@
                 
                 // Fetch auth config to adjust lockscreen buttons
                 try {
-                    const res = await fetch("/api/auth/config");
+                    const res = await fetch(resolveUrl("/api/auth/config"));
                     if (res.ok) {
                         const data = await res.json();
                         const googleBtn = document.getElementById("google-login-btn");
@@ -1423,10 +1428,10 @@
             if (e.key === "Enter") performUnlock();
         });
         document.getElementById("google-login-btn").addEventListener("click", () => {
-            window.location.href = "/api/auth/google/login";
+            window.location.href = resolveUrl("/api/auth/google/login");
         });
         document.getElementById("temple-login-btn").addEventListener("click", () => {
-            window.location.href = "/api/auth/temple/login";
+            window.location.href = resolveUrl("/api/auth/temple/login");
         });
         document.getElementById("auth-reload-btn").addEventListener("click", () => {
             window.location.reload();
@@ -1438,7 +1443,7 @@
             errorMsg.style.display = "none";
 
             try {
-                const res = await fetch("/api/auth/login", {
+                const res = await fetch(resolveUrl("/api/auth/login"), {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({password: pass})
@@ -1485,7 +1490,7 @@
         }
 
         async function logoutUser() {
-            await fetch("/api/auth/logout", {method: "POST"});
+            await fetch(resolveUrl("/api/auth/logout"), {method: "POST"});
             updateUserProfile(null);
             // Reload rather than locking unconditionally: initApp() checks whether auth
             // is enabled at all, so deployments with no sign-in method configured land
@@ -1564,6 +1569,12 @@
                 document.getElementById("serverless-notice").style.display = serverlessMode ? "block" : "none";
 
                 if (serverlessMode) {
+                    // Chat is one outbound call to an LLM, so it works here whenever
+                    // OLLAMA_BASE_URL points somewhere a function can actually reach.
+                    document.getElementById("serverless-chat-note").innerText = data.chat_available
+                        ? "Owl Speaks chat is available."
+                        : "Owl Speaks chat needs OLLAMA_BASE_URL set to a reachable endpoint.";
+
                     ["stat-uptime", "stat-monitors", "stat-rules", "stat-dbsize", "stat-lastcheck"]
                         .forEach(id => { document.getElementById(id).innerText = "—"; });
                     controls.innerHTML = "";
@@ -2491,7 +2502,7 @@
                     images: cleanedBase64Images.length > 0 ? cleanedBase64Images : null
                 };
 
-                const res = await fetch("/api/chat", {
+                const res = await fetch(resolveUrl("/api/chat"), {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"

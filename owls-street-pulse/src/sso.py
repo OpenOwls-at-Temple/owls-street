@@ -44,7 +44,14 @@ def mock_sso_enabled() -> bool:
 
 
 def resolve_google_credentials(config=None) -> Tuple[Optional[str], Optional[str], Optional[str], str]:
-    """Google credentials from the config file when present, else the environment."""
+    """Google credentials from the config file when present, else the environment.
+
+    PULSE_GOOGLE_REDIRECT_URI overrides everything else, and exists for the deployment
+    shape where both apps share one Vercel project and therefore one environment. Their
+    callbacks sit at different paths — /pulse/api/auth/google/callback here against
+    /api/auth/google/callback for the view — so a single GOOGLE_REDIRECT_URI cannot serve
+    both. Set this and Google returns users to whichever app sent them.
+    """
     client_id = client_secret = redirect_uri = None
     allowed = None
 
@@ -57,7 +64,11 @@ def resolve_google_credentials(config=None) -> Tuple[Optional[str], Optional[str
 
     client_id = client_id or os.environ.get("GOOGLE_CLIENT_ID")
     client_secret = client_secret or os.environ.get("GOOGLE_CLIENT_SECRET")
-    redirect_uri = redirect_uri or os.environ.get("GOOGLE_REDIRECT_URI")
+    redirect_uri = (
+        os.environ.get("PULSE_GOOGLE_REDIRECT_URI")
+        or redirect_uri
+        or os.environ.get("GOOGLE_REDIRECT_URI")
+    )
     allowed = allowed or os.environ.get("ALLOWED_EMAILS", "")
 
     # "mock" is a placeholder in the example env files, not a usable client id.

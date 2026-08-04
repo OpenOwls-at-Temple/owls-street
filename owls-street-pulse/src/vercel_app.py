@@ -24,7 +24,7 @@ PULSE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PULSE_ROOT not in sys.path:
     sys.path.insert(0, PULSE_ROOT)
 
-from src import sso
+from src import llm, sso
 from src.auth_helper import create_jwt, verify_jwt, MOCK_GOOGLE_LOGIN_HTML
 
 logger = logging.getLogger(__name__)
@@ -48,6 +48,36 @@ SERVERLESS_MSG = (
     "The Owls Street Pulse alert engine requires a persistent server. "
     "Please deploy with Docker or a VPS for full functionality."
 )
+
+# Only /tmp is writable in a serverless function. The alert history stored here is
+# discarded with the instance, which is fine: nothing writes to it in this mode, and chat
+# treats it as optional context.
+CHAT_DB_PATH = os.environ.get("WEB_DB_PATH", "/tmp/alerts.db")
+CHAT_CONFIG_PATH = os.environ.get("WEB_CONFIG_PATH", "config/config.yaml")
+
+
+def chat_available() -> bool:
+    """Whether this deployment can reach an LLM at all."""
+    return not llm.ollama_is_local()
+
+
+def _serverless_chat_config():
+    """Monitor/credential config for chat, or None when there is none to be had.
+
+    config.yaml is gitignored, so a deployment only has one if it was committed
+    deliberately — the same file the GitHub Actions engine needs. Without it chat still
+    answers, just with no pre-calculated indicator context.
+    """
+    from src.config import load_config
+
+    for candidate in (CHAT_CONFIG_PATH, os.path.join(PULSE_ROOT, "config", "config.yaml")):
+        if not os.path.exists(candidate):
+            continue
+        try:
+            return load_config(candidate)
+        except Exception as e:
+            logger.warning("Chat config at %s did not load (%s).", candidate, e)
+    return None
 
 
 # ── Dashboard HTML ─────────────────────────────────────────────────────────────
@@ -148,9 +178,11 @@ def get_status(request: Request):
         "user": state["user"],
         "google_sso_configured": state["google_enabled"],
         "serverless_mode": True,
+        "chat_available": chat_available(),
         "message": (
             "Running in Vercel serverless mode. "
-            "The alert engine, database, and chat features require a persistent server."
+            "The alert engine and its database require a persistent server; "
+            "chat works when OLLAMA_BASE_URL points at a reachable endpoint."
         ),
     }
 
@@ -314,17 +346,51 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/api/chat")
-def chat(payload: ChatRequest):
-    return JSONResponse(
-        status_code=503,
-        content={
-            "status": "unavailable",
-            "message": (
-                "The Owl Speaks chat agent requires a local Ollama instance "
-                "and is not available in serverless mode."
-            ),
-        },
-    )
+async def chat(payload: ChatRequest, request: Request):
+    """Owl Speaks chat.
+
+    Unlike the engine, chat has nothing that needs a persistent process: it is one
+    outbound call to an LLM. What it does need is an Ollama endpoint reachable from a
+    serverless function, so it works here exactly when OLLAMA_BASE_URL points at a
+    routable host rather than the loopback default.
+
+    Market context degrades rather than fails — no config file means no monitors, and a
+    read-only filesystem means no alert history, but the model still answers.
+    """
+    _require_auth(request)
+
+    if not chat_available():
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unavailable",
+                "message": (
+                    "The Owl Speaks chat agent needs an Ollama endpoint reachable from this "
+                    "deployment. Set OLLAMA_BASE_URL to a publicly routable address (the "
+                    "default is a loopback address, which a serverless function has no "
+                    "access to)."
+                ),
+            },
+        )
+
+    # Imported here, not at module scope: the chat agent pulls in pandas and the Alpaca
+    # client, and every other endpoint in this app would otherwise pay for it on a cold
+    # start it never uses.
+    from src.chat import OwlSpeaksAgent
+
+    try:
+        config = _serverless_chat_config()
+        agent = OwlSpeaksAgent(config, db_path=CHAT_DB_PATH)
+        response_text = await agent.generate_response(
+            user_message=payload.message,
+            symbol=payload.symbol,
+            history=payload.history,
+            images=payload.images,
+        )
+        return {"status": "success", "response": response_text}
+    except Exception as e:
+        logger.error("Error in serverless /api/chat: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to communicate with LLM: {e}")
 
 
 # ── Password sign-in / sign-out ────────────────────────────────────────────────

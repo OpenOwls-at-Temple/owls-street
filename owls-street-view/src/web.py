@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import asyncio
+import time
 from typing import Optional, Dict, List, Any
 import hashlib
 from fastapi import FastAPI, Request, Response, HTTPException, Depends, WebSocket, WebSocketDisconnect, Form
@@ -673,6 +674,42 @@ def microsoft_mock_callback(request: Request, email: str, state: str):
     response.delete_cookie("oauth_state")
     return response
 
+# The dashboard polls /api/status every 5 seconds, so the reachability probe behind it is
+# cached. Without that, one viewer generates 12 extra Pulse requests a minute — which on a
+# combined Vercel deployment, where Pulse is another function on this same domain, means
+# paying for a second invocation every time.
+_PULSE_PROBE_TTL_SECONDS = 30
+_pulse_probe_cache: Dict[str, Any] = {"url": None, "online": False, "checked_at": 0.0}
+
+
+def _probe_pulse(url: Optional[str]) -> bool:
+    """Whether Pulse answers, cached briefly.
+
+    The timeout is generous on purpose: Pulse may be a serverless function, and a cold
+    start takes several seconds. A 1-second budget reported a healthy deployment as
+    offline and hid the embedded dashboard behind a "service is down" panel.
+    """
+    if not url:
+        return False
+
+    now = time.time()
+    if (
+        _pulse_probe_cache["url"] == url
+        and now - _pulse_probe_cache["checked_at"] < _PULSE_PROBE_TTL_SECONDS
+    ):
+        return _pulse_probe_cache["online"]
+
+    online = False
+    try:
+        response = httpx.get(url, timeout=8.0, follow_redirects=True)
+        online = response.status_code == 200
+    except Exception as e:
+        logger.debug("Pulse probe of %s failed: %s", url, e)
+
+    _pulse_probe_cache.update({"url": url, "online": online, "checked_at": now})
+    return online
+
+
 @app.get("/api/status")
 def get_status(request: Request):
     global dashboard_password, alpaca_service, pulse_url, active_sessions, app_config
@@ -703,15 +740,7 @@ def get_status(request: Request):
                 "avatar": payload.get("avatar")
             }
 
-    pulse_online = False
-    if pulse_url:
-        import httpx
-        try:
-            response = httpx.get(pulse_url, timeout=1.0)
-            if response.status_code == 200:
-                pulse_online = True
-        except Exception:
-            pass
+    pulse_online = _probe_pulse(pulse_url)
 
     return {
         "status": "online",

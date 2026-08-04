@@ -200,3 +200,71 @@ def test_chat_api_endpoint(tmp_path, mock_config_path):
                 history=[],
                 images=None
             )
+
+
+# ── Degrading instead of failing ───────────────────────────────────────────────
+#
+# Market context is an enrichment. Chat used to require a loadable config with non-empty
+# Alpaca credentials and a writable database, so a deployment missing any of them answered
+# every question — including ones needing no market data at all — with a 500.
+
+def test_agent_without_config_has_no_market_context(tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+    assert agent.client is None
+    assert agent.monitors == []
+
+
+def test_agent_without_credentials_has_no_alpaca_client(mock_config_path, tmp_path):
+    config = load_config(mock_config_path)
+    config.alpaca.api_key = ""
+    agent = OwlSpeaksAgent(config=config, db_path=str(tmp_path / "alerts.db"))
+    assert agent.client is None
+
+
+def test_agent_survives_an_unwritable_database(dummy_app_config):
+    """Only /tmp is writable in a serverless function; alert history is optional context."""
+    with patch("src.chat.StateDatabase", side_effect=OSError("read-only file system")):
+        agent = OwlSpeaksAgent(config=dummy_app_config, db_path="/nope/alerts.db")
+    assert agent.db is None
+
+
+def test_symbol_context_reports_missing_credentials(mock_config_path, tmp_path):
+    config = load_config(mock_config_path)
+    config.alpaca.api_secret = ""
+    agent = OwlSpeaksAgent(config=config, db_path=str(tmp_path / "alerts.db"))
+
+    context = agent.get_symbol_context("AAPL")  # AAPL *is* monitored in this config
+    assert "no Alpaca credentials" in context
+
+
+@patch("httpx.AsyncClient.post")
+def test_generate_response_without_config_skips_market_lookups(mock_post, tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"message": {"role": "assistant", "content": "RSI measures momentum."}}
+    mock_post.return_value = mock_response
+
+    res = asyncio.run(agent.generate_response(user_message="What does RSI measure?"))
+
+    assert res == "RSI measures momentum."
+    # No credentials means no snapshot or news calls to make, so the ticker scan in the
+    # message must not be attempted rather than raising on a missing client.
+    payload = mock_post.call_args.kwargs["json"]
+    assert "Real-time Market Quote" not in payload["messages"][0]["content"]
+
+
+def test_chat_endpoint_answers_when_the_config_will_not_load(tmp_path):
+    """An unloadable config used to surface as a 500 with a pydantic dump in the detail."""
+    import src.web
+    src.web.CONFIG_PATH = str(tmp_path / "absent.yaml")
+    src.web.DB_PATH = str(tmp_path / "alerts.db")
+
+    with patch("src.chat.OwlSpeaksAgent.generate_response", new_callable=AsyncMock) as mock_gen:
+        mock_gen.return_value = "Answered without market context."
+        with patch.dict(os.environ, {}, clear=True):
+            response = client.post("/api/chat", json={"message": "What does RSI measure?"})
+
+    assert response.status_code == 200
+    assert response.json()["response"] == "Answered without market context."

@@ -516,7 +516,14 @@ async def chat_with_owl(payload: ChatRequest):
     """Sends a chat message to the local Owl Speaks agent and returns the response."""
     logger.info(f"Received chat request: message_len={len(payload.message)}, symbol={payload.symbol}, history_len={len(payload.history) if payload.history else 0}, images={payload.images}")
     try:
-        config = load_config(CONFIG_PATH)
+        # Market context is an enrichment, not a prerequisite. A config that won't load —
+        # most often absent Alpaca credentials — used to fail the whole request, so a
+        # question needing no market data at all ("what does RSI measure?") returned a 500.
+        try:
+            config = load_config(CONFIG_PATH)
+        except Exception as e:
+            logger.warning("Chat running without market context; config did not load: %s", e)
+            config = None
         agent = OwlSpeaksAgent(config, db_path=DB_PATH)
         response_text = await agent.generate_response(
             user_message=payload.message,

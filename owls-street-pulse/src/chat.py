@@ -1,4 +1,3 @@
-import os
 import logging
 import httpx
 from datetime import datetime, timezone
@@ -9,23 +8,49 @@ from src.alpaca import AlpacaClient
 from src.engine import calculate_lookback_start
 from src.indicators import evaluate_indicator_rule
 from src.database import StateDatabase
+from src.llm import ollama_base_url, ollama_is_local, ollama_model
 
 logger = logging.getLogger(__name__)
 
-# Default configuration for Ollama
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.1")
 
 class OwlSpeaksAgent:
-    def __init__(self, config: AppConfig, db_path: str = "data/alerts.db"):
+    """Owl Speaks chat agent.
+
+    `config` may be None, which is what serverless mode and a misconfigured deployment
+    look like: without it there are no monitors to pull indicator context from and no
+    Alpaca credentials to fetch quotes with, so the agent answers from the model alone
+    rather than failing the request. The same applies piecewise — absent credentials or
+    an unwritable database each disable their own feature, nothing more.
+    """
+
+    def __init__(self, config: Optional[AppConfig] = None, db_path: str = "data/alerts.db"):
         self.config = config
         self.db_path = db_path
-        self.client = AlpacaClient(
-            api_key=config.alpaca.api_key,
-            api_secret=config.alpaca.api_secret,
-            data_base_url=config.alpaca.data_base_url
-        )
-        self.db = StateDatabase(db_path=db_path)
+        self.client = None
+        self.db = None
+
+        alpaca = getattr(config, "alpaca", None)
+        if alpaca and alpaca.api_key and alpaca.api_secret:
+            self.client = AlpacaClient(
+                api_key=alpaca.api_key,
+                api_secret=alpaca.api_secret,
+                data_base_url=alpaca.data_base_url
+            )
+        else:
+            logger.warning(
+                "Owl Speaks has no Alpaca credentials; answering without live market context."
+            )
+
+        try:
+            self.db = StateDatabase(db_path=db_path)
+        except Exception as e:
+            # A read-only filesystem is the normal case on Vercel. Alert history is
+            # context, not a requirement, so drop it and carry on.
+            logger.warning("Owl Speaks alert history unavailable (%s).", e)
+
+    @property
+    def monitors(self) -> List[MonitorConfig]:
+        return list(getattr(self.config, "monitors", []) or [])
 
     def get_symbol_context(self, symbol: str) -> str:
         """
@@ -35,13 +60,19 @@ class OwlSpeaksAgent:
         symbol_upper = symbol.strip().upper()
         # Find the monitor configuration for this symbol
         monitor: Optional[MonitorConfig] = None
-        for m in self.config.monitors:
+        for m in self.monitors:
             if m.symbol.upper() == symbol_upper:
                 monitor = m
                 break
 
         if not monitor:
             return f"Note: Symbol '{symbol_upper}' is not currently monitored by the alert system. No pre-calculated indicator context is available."
+
+        if not self.client:
+            return (
+                f"Note: Symbol '{symbol_upper}' is monitored, but this deployment has no Alpaca "
+                "credentials configured, so no live indicator values could be calculated."
+            )
 
         context_lines = []
         context_lines.append(f"### Technical Context for {symbol_upper} (Asset Class: {monitor.asset_class})")
@@ -108,6 +139,8 @@ class OwlSpeaksAgent:
                 context_lines.append(f"- **Timeframe: {timeframe}**: Failed to load data/calculate indicators ({str(e)}).")
 
         # Fetch recent alert history for this symbol
+        if not self.db:
+            return "\n".join(context_lines)
         try:
             all_alerts = self.db.get_all_alerts(limit=50)
             symbol_alerts = [a for a in all_alerts if a["symbol"].upper() == symbol_upper][:5]
@@ -131,9 +164,10 @@ class OwlSpeaksAgent:
         Sends the user message and conversation history to the local Ollama instance, 
         injecting the technical indicator context if a symbol is specified.
         """
-        # Load local configuration environment settings
-        model_name = OLLAMA_MODEL
-        url = f"{OLLAMA_BASE_URL}/api/chat"
+        # Load configuration environment settings
+        base_url = ollama_base_url()
+        model_name = ollama_model()
+        url = f"{base_url}/api/chat"
 
         # 1. Gather context if symbol is provided
         context_str = ""
@@ -143,9 +177,9 @@ class OwlSpeaksAgent:
         # 2. Extract potential symbols from the user message for real-time RAG news/quote injection
         rag_symbols = []
         msg_upper = user_message.upper()
-        
+
         # Cross-reference with config monitors first
-        for monitor in self.config.monitors:
+        for monitor in self.monitors:
             sym = monitor.symbol.upper()
             if sym in msg_upper or sym.replace("/", "") in msg_upper:
                 rag_symbols.append((monitor.symbol, monitor.asset_class))
@@ -173,7 +207,7 @@ class OwlSpeaksAgent:
 
         # Fetch real-time snapshots and news context for up to 3 symbols to avoid token overflow
         rag_context_blocks = []
-        for rag_sym, rag_asset in rag_symbols[:3]:
+        for rag_sym, rag_asset in (rag_symbols[:3] if self.client else []):
             snapshot = self.client.get_snapshot(rag_sym, rag_asset)
             news = self.client.get_news(rag_sym, limit=3)
             
@@ -304,14 +338,23 @@ class OwlSpeaksAgent:
                 detail = e.response.text
             return f"⚠️ **Ollama API Error ({e.response.status_code})**: {detail}"
         except httpx.ConnectError:
-            logger.error(f"Failed to connect to local Ollama instance at {OLLAMA_BASE_URL}")
+            logger.error("Failed to connect to the Ollama instance at %s", base_url)
+            if ollama_is_local(base_url):
+                return (
+                    "⚠️ **Ollama Connection Error**\n\n"
+                    f"Could not connect to the local Ollama instance at `{base_url}`.\n\n"
+                    "Please make sure:\n"
+                    "1. Ollama is installed and running on your system.\n"
+                    f"2. The model `{model_name}` has been downloaded (run `ollama pull {model_name}` in your terminal).\n"
+                    "3. If you are running under a custom port, make sure `OLLAMA_BASE_URL` is set correctly in your environment."
+                )
             return (
                 "⚠️ **Ollama Connection Error**\n\n"
-                f"Could not connect to the local Ollama instance at `{OLLAMA_BASE_URL}`.\n\n"
+                f"Could not reach the Ollama endpoint at `{base_url}`.\n\n"
                 "Please make sure:\n"
-                "1. Ollama is installed and running on your system.\n"
-                f"2. The model `{model_name}` has been downloaded (run `ollama pull {model_name}` in your terminal).\n"
-                "3. If you are running under a custom port, make sure `OLLAMA_BASE_URL` is set correctly in your environment."
+                "1. The endpoint is running and reachable from the internet.\n"
+                f"2. It serves the model `{model_name}`.\n"
+                "3. `OLLAMA_BASE_URL` is set to its public address in this deployment's environment."
             )
         except Exception as e:
             logger.error(f"Error querying Ollama API: {e}", exc_info=True)

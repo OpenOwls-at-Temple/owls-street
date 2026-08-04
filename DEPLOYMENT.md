@@ -8,12 +8,12 @@ Two supported shapes:
 | Alert engine | GitHub Actions cron, ~10 min | Background thread, 60 s |
 | Alert state | `pulse-state` branch | Persistent volume |
 | Live WebSocket quotes | ✗ | ✓ |
-| Owl Speaks chat | ✗ (needs Ollama) | ✓ |
+| Owl Speaks chat | ✓ with a reachable Ollama | ✓ |
 | Cost | $0 | ~$5–15/mo |
 
 The free shape delivers alerts and serves both dashboards, which covers most of what the
-project is for. Move to containers when you want second-by-second polling, streaming
-prices, or the chat agent.
+project is for. Move to containers when you want second-by-second polling or streaming
+prices.
 
 ---
 
@@ -21,15 +21,74 @@ prices, or the chat agent.
 
 ## 1. Dashboards on Vercel
 
-Create two Vercel projects from this repository, each with **Root Directory** set to its
-subfolder — `owls-street-view` and `owls-street-pulse`. Add the environment variables from
-[the tables below](#environment-variables). Hobby plan is enough.
+Both apps deploy as **one Vercel project** rooted at the repository root, driven by
+[vercel.json](vercel.json). The view answers at the domain root and Pulse is served under
+`/pulse`:
 
-The view is fully functional. Pulse runs in reduced mode: the dashboard renders, and engine,
-alert, config, and chat endpoints return `503`, which the UI detects and explains.
+| Path | Served by |
+| --- | --- |
+| `/` and the SPA's assets | `owls-street-view/frontend/build`, from the CDN |
+| `/api/*`, `/auth/*` | [api/view.py](api/view.py) → `owls-street-view/src/web.py` |
+| `/pulse`, `/pulse/*` | [api/pulse.py](api/pulse.py) → `owls-street-pulse/src/vercel_app.py` |
 
-Because both projects watch the same repository, a push rebuilds both. Set **Ignored Build
-Step** per project to skip no-op builds:
+One project means one build, one domain, and one set of environment variables, which is
+what lets the two apps agree on `DASHBOARD_PASSWORD` — see [Owl Speaks needs a matching
+password](#owl-speaks-needs-a-matching-password-on-both-services). It also puts the
+embedded Pulse dashboard on the same origin as the view, so the iframe's theme sync works.
+
+### Deploy it
+
+```sh
+npx vercel link          # once, to create or attach the project
+npx vercel --prod
+```
+
+Leave **Root Directory** empty (the repository root). Add the environment variables from
+[the tables below](#environment-variables), at minimum:
+
+| Variable | Value |
+| --- | --- |
+| `ALPACA_API_KEY` / `ALPACA_SECRET_KEY` | your Alpaca credentials (the view reads `ALPACA_SECRET_KEY`) |
+| `ALPACA_API_SECRET` | the same secret again — Pulse's chat context reads this name |
+| `SSO_JWT_SECRET` | a random string; without it both apps fall back to a hardcoded default |
+| `DASHBOARD_PASSWORD` | shared by both apps, and how the view authenticates its chat proxy |
+| `PULSE_URL` | `https://<your-domain>/pulse` |
+| `OLLAMA_BASE_URL` | a publicly reachable Ollama, for chat — see [below](#owl-speaks-on-vercel) |
+
+`PULSE_URL` cannot be known before the first deploy. Deploy once, then set it to the
+generated domain and redeploy.
+
+### Owl Speaks on Vercel
+
+Chat is one outbound call to an LLM, so it needs no persistent process and works here — but
+a serverless function has no loopback interface, so the default
+`OLLAMA_BASE_URL=http://localhost:11434` cannot resolve to anything. Point it at an Ollama
+reachable from the public internet:
+
+- a tunnel to a machine running Ollama (`cloudflared`, `tailscale funnel`, `ngrok`)
+- an Ollama-compatible endpoint you host elsewhere
+
+Pulse reports which state it is in: `/pulse/api/status` returns `chat_available`, the
+dashboard's serverless notice says so, and `POST /pulse/api/chat` answers `503` naming the
+variable to set rather than failing opaquely.
+
+Chat degrades rather than breaks when market context is missing. Without a committed
+`owls-street-pulse/config/config.yaml` there are no monitors to compute indicators for, and
+the serverless filesystem has no alert history — the model still answers, and says what it
+could not see. Set the Alpaca variables to get live quotes and news in its context.
+
+### What still doesn't work
+
+The engine, alert log, config editor, and `/ws/quotes` need a persistent server; those
+endpoints return `503` and the UI explains why. The engine moves to GitHub Actions below.
+
+### Two projects instead of one
+
+The per-app configs ([owls-street-view/vercel.json](owls-street-view/vercel.json),
+[owls-street-pulse/vercel.json](owls-street-pulse/vercel.json)) still work if you prefer a
+project per app, each with **Root Directory** set to its subfolder. You then have two
+domains, and must keep `DASHBOARD_PASSWORD` and `SSO_JWT_SECRET` identical across both by
+hand. Set **Ignored Build Step** per project to skip no-op builds:
 
 ```sh
 git diff --quiet HEAD^ HEAD -- .
@@ -149,7 +208,7 @@ it has no volumes and can be rebuilt or scaled freely.
 | `SSO_JWT_SECRET` | yes | Session signing key. Without it the code falls back to a hardcoded default, so anyone could forge a session. |
 | `FMP_API_KEY` | optional | Financial Modeling Prep, for screener fundamentals |
 | `DASHBOARD_PASSWORD` | optional | Enables password auth |
-| `PULSE_URL` | set by compose | Owl Speaks chat proxy target |
+| `PULSE_URL` | set by compose | Owl Speaks chat proxy target, and the embedded Pulse dashboard's iframe source. On a combined Vercel deployment set it to `https://<domain>/pulse` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | optional | Google SSO |
 | `GOOGLE_REDIRECT_URI` | with Google SSO | `https://<domain>/api/auth/google/callback` |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | optional | Microsoft Entra SSO (Temple's tenant) |
@@ -166,12 +225,24 @@ it has no volumes and can be rebuilt or scaled freely.
 | `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | optional | Alert destinations |
 | `DASHBOARD_PASSWORD` | optional | Enables password auth |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` / `ALLOWED_EMAILS` | optional | Google SSO (Pulse has no Microsoft SSO) |
-| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | optional | Owl Speaks chat agent |
+| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | optional | Owl Speaks chat agent. Defaults to `http://localhost:11434` and `llama3.1`; must be a publicly reachable address on Vercel |
+| `PULSE_GOOGLE_REDIRECT_URI` | combined Vercel only | `https://<domain>/pulse/api/auth/google/callback`. Overrides `GOOGLE_REDIRECT_URI` for Pulse alone |
 | `WEB_CONFIG_PATH` / `WEB_DB_PATH` | optional | Override config and database locations |
 
-On Vercel, Pulse needs `ALPACA_*` only if you also run the container; the serverless app
-never touches market data. But it **does** need `SSO_JWT_SECRET` plus whichever of
-`DASHBOARD_PASSWORD` and `GOOGLE_*` you use — sign-in is fully functional there.
+On Vercel, Pulse needs `SSO_JWT_SECRET` plus whichever of `DASHBOARD_PASSWORD` and
+`GOOGLE_*` you use — sign-in is fully functional there. `ALPACA_API_KEY` /
+`ALPACA_API_SECRET` are optional: the engine runs elsewhere, but chat uses them for live
+quotes, news, and indicator context, and answers without them if they are absent.
+
+### Google SSO on a combined deployment
+
+One project means one environment, and the two apps' OAuth callbacks sit at different paths
+— `/api/auth/google/callback` for the view, `/pulse/api/auth/google/callback` for Pulse. A
+single `GOOGLE_REDIRECT_URI` therefore cannot serve both: whichever app it names, the other
+sends users to the wrong callback and they end up signed in to the wrong dashboard.
+
+Set `GOOGLE_REDIRECT_URI` to the view's callback and `PULSE_GOOGLE_REDIRECT_URI` to Pulse's,
+and register **both** URIs in the Google Cloud console.
 
 ## Never set ALLOW_MOCK_SSO in a deployment
 
@@ -245,16 +316,25 @@ Details behind the [free deployment](#1-dashboards-on-vercel) above:
 
 - **Why Pulse is reduced.** The engine needs a persistent process and a writable SQLite
   file, neither of which exists on Vercel, so
-  [src/vercel_app.py](owls-street-pulse/src/vercel_app.py) serves the dashboard and returns
-  `503` elsewhere. That is why the engine moves to GitHub Actions.
+  [src/vercel_app.py](owls-street-pulse/src/vercel_app.py) serves the dashboard and chat and
+  returns `503` for the rest. That is why the engine moves to GitHub Actions.
 - **Vercel Cron can't replace it.** Hobby crons run at most once per day, with a limit of
   two jobs. Minute-level scheduling needs Pro, plus a hosted database for state — more cost
   and more work than the Actions route for a worse result.
 - **No live quote stream.** `/ws/quotes` is a WebSocket, unsupported on any Vercel plan.
   The dashboard loads and REST calls work; streaming prices don't.
-- **Cold starts.** The view function pulls in `pandas` and `alpaca-py`.
-- **Always set a Root Directory.** The repository root is not deployable; a root-level
-  import will fail.
+- **Cold starts.** Both functions pull in `pandas` and `alpaca-py` — Vercel installs the
+  root [requirements.txt](requirements.txt) for every Python function, so Pulse carries the
+  view's dependencies too. Chat imports the agent lazily so endpoints that never chat don't
+  pay for it.
+- **Root `requirements.txt` is a third copy.** The per-app files stay authoritative for
+  local development, Docker, and CI. Update this one whenever either of those changes.
+- **Why Pulse is mounted, not rewritten.** Vercel passes the function the original request
+  path, so `api/pulse.py` sees `/pulse/api/status`. Mounting the app at `/pulse` strips the
+  prefix for routing, leaving the app identical to the copy that serves from a domain root.
+  The dashboard's own calls go through `resolveUrl()`, which adds the same prefix.
+- **`/pulse` state is per-invocation.** `WEB_DB_PATH` defaults to `/tmp/alerts.db` because
+  nothing else is writable. Nothing in this mode writes to it; chat reads it if present.
 
 ## Local development
 
