@@ -21,8 +21,8 @@ const toggleBtn = {
 const s = {
   card: {
     background: 'var(--bg-surface)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    backdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
+    WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
     border: '1px solid var(--border)',
     borderRadius: 16,
     overflow: 'hidden',

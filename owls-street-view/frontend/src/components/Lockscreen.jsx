@@ -170,8 +170,8 @@ const styles = {
   },
   card: {
     background: 'var(--bg-surface)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
+    backdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
+    WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
     border: '1px solid var(--border)',
     borderRadius: 20,
     width: 380,

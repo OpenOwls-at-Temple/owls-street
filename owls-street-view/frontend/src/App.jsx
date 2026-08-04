@@ -677,7 +677,7 @@ export default function App() {
           {activeTab === 'Orders' && <Orders />}
 
           {activeTab === 'Pulse Alerts' && (
-            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: 'calc(100vh - 120px)', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: 'calc(100vh - 120px)', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', backdropFilter: 'blur(var(--glass-blur)) saturate(150%)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-muted)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: pulseOnline ? 'var(--success)' : 'var(--warning)', boxShadow: pulseOnline ? '0 0 8px var(--success)' : '0 0 8px var(--warning)' }}></span>
@@ -776,6 +776,8 @@ const sidebarStyles = {
   sidebar: {
     width: 260,
     background: 'var(--bg-surface)',
+    backdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
+    WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
     borderRight: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',

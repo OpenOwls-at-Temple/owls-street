@@ -6,8 +6,8 @@ const s = {
     padding: '16px 32px',
     background: 'var(--bg-muted)',
     borderBottom: '1px solid var(--border)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
+    backdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
+    WebkitBackdropFilter: 'blur(var(--glass-blur)) saturate(150%)',
   },
   logoContainer: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   badge: {

@@ -17,23 +17,28 @@
  */
 
 :root {
-  /* Layers, deepest first. */
-  --bg-canvas: #0e1013;
-  --bg-app: #14161a;
-  --bg-muted: #171a1f;
-  --bg-surface: #1a1d22;
-  --bg-elevated: #22262d;
-  --bg-input: #101215;
+  /* Layers. Translucent on purpose, but at a fixed opacity per role so a surface's
+     final colour is predictable instead of depending on whatever sits behind it. Charts and
+     code keep an opaque canvas — text density there needs a stable ground. */
+  --bg-canvas: #0b0d10;
+  --bg-app: #0d0f13;
+  --bg-muted: rgba(20, 23, 28, 0.55);
+  --bg-surface: rgba(26, 29, 35, 0.62);
+  --bg-elevated: rgba(38, 42, 51, 0.72);
+  --bg-input: rgba(8, 9, 12, 0.55);
 
-  --border: rgba(255, 255, 255, 0.09);
-  --border-subtle: rgba(255, 255, 255, 0.055);
+  /* Glass: the blur, the hairline, and the 1px highlight along the top edge that reads as
+     light catching a pane. The highlight is baked into the shadow tokens so every surface
+     already using them picks it up. */
+  --glass-blur: 18px;
+  --glass-highlight: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.06);
 
   --text-primary: #e9ebee;
   --text-secondary: #a2a9b4;
   --text-muted: #8b939f;
 
-  /* One accent. --accent fills, --accent-text is the tone that stays readable *as* text,
-     --accent-strong is a deeper indigo rather than the old violet. */
   --accent: #6366f1;
   --accent-strong: #4f52d6;
   --accent-contrast: #ffffff;
@@ -48,30 +53,36 @@
   --warning-soft: rgba(245, 158, 11, 0.12);
   --warning-border: rgba(245, 158, 11, 0.32);
 
-  /* One shadow scale. */
-  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.28);
-  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-accent: 0 2px 10px rgba(99, 102, 241, 0.35);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 var(--glass-highlight);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 var(--glass-highlight);
+  --shadow-overlay: 0 28px 70px rgba(0, 0, 0, 0.62), 0 2px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 var(--glass-highlight);
+  --shadow-accent: 0 2px 12px rgba(99, 102, 241, 0.38);
   --shadow-context: rgba(0, 0, 0, 0.5);
 
-  /* Neutral now: these used to tint whole panels indigo/violet. */
-  --surface-grad-top: rgba(255, 255, 255, 0.022);
+  /* Faint depth behind the glass. Without something to refract, a blurred pane just looks
+     like flat grey. Kept low so it reads as light, not colour. */
+  --surface-grad-top: rgba(255, 255, 255, 0.03);
   --surface-grad-bot: rgba(255, 255, 255, 0);
-  --app-grad-a: rgba(255, 255, 255, 0.014);
-  --app-grad-b: rgba(255, 255, 255, 0);
+  --app-grad-a: rgba(99, 102, 241, 0.1);
+  --app-grad-b: rgba(120, 140, 200, 0.06);
   --grid-line: rgba(255, 255, 255, 0.05);
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-theme='light'] {
   --bg-canvas: #ffffff;
-  --bg-app: #f3f4f6;
-  --bg-muted: #f0f1f3;
-  --bg-surface: #f8f9fa;
-  --bg-elevated: #ffffff;
-  --bg-input: #eaecef;
+  --bg-app: #eef0f4;
+  --bg-muted: rgba(255, 255, 255, 0.55);
+  --bg-surface: rgba(255, 255, 255, 0.72);
+  --bg-elevated: rgba(255, 255, 255, 0.88);
+  --bg-input: rgba(16, 18, 22, 0.05);
 
-  --border: rgba(16, 18, 22, 0.11);
+  --glass-blur: 18px;
+  --glass-highlight: rgba(255, 255, 255, 0.8);
+  --border: rgba(16, 18, 22, 0.1);
   --border-subtle: rgba(16, 18, 22, 0.06);
 
   --text-primary: #16181d;
@@ -84,7 +95,6 @@
   --accent-soft: rgba(79, 70, 229, 0.1);
   --accent-text: #3730a3;
 
-  /* Darkened for light surfaces: the dark theme's #10b981 and #f87171 sit near 2.5:1 here. */
   --success: #04724f;
   --danger: #c62828;
   --warning: #92400e;
@@ -93,17 +103,21 @@
   --warning-soft: rgba(146, 64, 14, 0.08);
   --warning-border: rgba(146, 64, 14, 0.28);
 
-  --shadow-soft: 0 1px 2px rgba(16, 18, 22, 0.06);
-  --shadow-card: 0 1px 2px rgba(16, 18, 22, 0.05), 0 6px 20px rgba(16, 18, 22, 0.05);
-  --shadow-overlay: 0 20px 50px rgba(16, 18, 22, 0.14), 0 2px 6px rgba(16, 18, 22, 0.06);
-  --shadow-accent: 0 2px 10px rgba(79, 70, 229, 0.22);
+  --shadow-soft: 0 1px 2px rgba(16, 18, 22, 0.07), inset 0 1px 0 var(--glass-highlight);
+  --shadow-card: 0 1px 2px rgba(16, 18, 22, 0.05), 0 10px 28px rgba(16, 18, 22, 0.07), inset 0 1px 0 var(--glass-highlight);
+  --shadow-overlay: 0 26px 60px rgba(16, 18, 22, 0.16), 0 2px 8px rgba(16, 18, 22, 0.07), inset 0 1px 0 var(--glass-highlight);
+  --shadow-accent: 0 2px 12px rgba(79, 70, 229, 0.24);
   --shadow-context: rgba(16, 18, 22, 0.1);
 
-  --surface-grad-top: rgba(16, 18, 22, 0.014);
-  --surface-grad-bot: rgba(16, 18, 22, 0);
-  --app-grad-a: rgba(16, 18, 22, 0.01);
-  --app-grad-b: rgba(16, 18, 22, 0);
+  --surface-grad-top: rgba(255, 255, 255, 0.6);
+  --surface-grad-bot: rgba(255, 255, 255, 0);
+  --app-grad-a: rgba(79, 70, 229, 0.07);
+  --app-grad-b: rgba(120, 140, 200, 0.06);
   --grid-line: rgba(16, 18, 22, 0.05);
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html,
@@ -217,3 +231,28 @@ body,
   top: -10px;
 }
 
+
+/* Applied to the panels that should read as glass. Blur only: their background, border and
+   shadow already come from the tokens above, and a component's inline style would override a
+   class for those regardless. */
+.glass {
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+/* Smoothness, applied broadly but only to properties that never affect layout. */
+button,
+select,
+a,
+input,
+textarea {
+  transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease),
+    color 0.18s var(--ease), box-shadow 0.18s var(--ease), opacity 0.18s var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
