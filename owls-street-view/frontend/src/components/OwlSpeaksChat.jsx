@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import renderMarkdown from '../utils/markdown';
+import '../utils/markdown.css';
 
 // Unique ID Generator
 const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
@@ -395,20 +397,7 @@ export default function OwlSpeaksChat({ symbols = [] }) {
     }
   };
 
-  // Simple Markdown Parser for UI rendering
-  const formatMessage = (text) => {
-    if (!text) return '';
-    let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    html = html.replace(/```(?:[a-zA-Z0-9]+)?\n([\s\S]*?)\n```/g, '<pre style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; overflow-x: auto; font-family: monospace; font-size: 12px; border: 1px solid rgba(255,255,255,0.05); margin: 6px 0;"><code>$1</code></pre>');
-    html = html.replace(/`([^`]+)`/g, '<code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 12px;">$1</code>');
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    html = html.replace(/---/g, '<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 10px 0;">');
-    html = html.replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
-    html = html.replace(/\n/g, '<br>');
-    return <div dangerouslySetInnerHTML={{ __html: html }} />;
-  };
+  const formatMessage = (text) => renderMarkdown(text);
 
   return (
     <>
@@ -459,7 +448,7 @@ export default function OwlSpeaksChat({ symbols = [] }) {
             <div style={styles.headerLeft}>
               <button
                 onClick={() => setShowHistory((prev) => !prev)}
-                style={{ ...styles.iconBtn, color: showHistory ? '#6366f1' : '#ffffff' }}
+                style={{ ...styles.iconBtn, color: showHistory ? 'var(--accent)' : 'var(--text-primary)' }}
                 title="Conversation History"
               >
                 <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 18, height: 18 }}>
@@ -532,8 +521,8 @@ export default function OwlSpeaksChat({ symbols = [] }) {
                       }}
                       style={{
                         ...styles.drawerItem,
-                        backgroundColor: t.id === activeThreadId ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                        borderColor: t.id === activeThreadId ? '#6366f1' : 'transparent',
+                        backgroundColor: t.id === activeThreadId ? 'var(--accent-soft)' : 'transparent',
+                        borderColor: t.id === activeThreadId ? 'var(--accent)' : 'transparent',
                       }}
                     >
                       <span style={styles.drawerItemTitle}>{t.title}</span>
@@ -553,6 +542,9 @@ export default function OwlSpeaksChat({ symbols = [] }) {
                 {chatHistory.map((msg, index) => (
                   <div
                     key={index}
+                    // md-on-accent re-points the markdown colours at the bubble's own text
+                    // colour; on the accent gradient the themed ones have no contrast.
+                    className={msg.role === 'user' ? 'md-on-accent' : undefined}
                     style={{
                       ...styles.message,
                       ...(msg.role === 'user' ? styles.userMessage : styles.assistantMessage),
@@ -565,7 +557,7 @@ export default function OwlSpeaksChat({ symbols = [] }) {
                         key={i}
                         src={img}
                         alt="Attached Upload"
-                        style={{ maxWidth: '100%', borderRadius: 8, marginTop: 8, border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ maxWidth: '100%', borderRadius: 8, marginTop: 8, border: '1px solid var(--border)' }}
                       />
                     ))}
                   </div>
@@ -653,14 +645,14 @@ const styles = {
     width: 56,
     height: 56,
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#ffffff',
+    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
+    color: 'var(--accent-contrast)',
     border: 'none',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)',
+    boxShadow: 'var(--shadow-accent)',
     zIndex: 9998,
     transition: 'transform 0.2s',
     outline: 'none',
@@ -671,12 +663,12 @@ const styles = {
     right: 24,
     width: 440,
     height: 580,
-    background: 'rgba(17, 24, 39, 0.85)',
+    background: 'var(--bg-surface)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    border: '1px solid var(--border)',
     borderRadius: 16,
-    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5)',
+    boxShadow: 'var(--shadow-overlay)',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -687,8 +679,8 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '12px 16px',
-    background: 'rgba(255, 255, 255, 0.03)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    background: 'var(--bg-muted)',
+    borderBottom: '1px solid var(--border-subtle)',
   },
   headerLeft: {
     display: 'flex',
@@ -713,18 +705,18 @@ const styles = {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    background: '#10b981',
-    boxShadow: '0 0 8px #10b981',
+    background: 'var(--success)',
+    boxShadow: '0 0 8px var(--success)',
   },
   headerTitle: {
     fontSize: 14,
     fontWeight: 700,
-    color: '#ffffff',
+    color: 'var(--text-primary)',
   },
   symbolSelector: {
-    background: 'rgba(0, 0, 0, 0.3)',
-    color: '#ffffff',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-input)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
     borderRadius: 6,
     padding: '4px 8px',
     fontSize: 11,
@@ -739,7 +731,7 @@ const styles = {
   },
   clearBtn: {
     background: 'transparent',
-    color: '#9ca3af',
+    color: 'var(--text-secondary)',
     border: 'none',
     fontSize: 11,
     fontWeight: 500,
@@ -748,7 +740,7 @@ const styles = {
   },
   closeBtn: {
     background: 'transparent',
-    color: '#ffffff',
+    color: 'var(--text-primary)',
     border: 'none',
     fontSize: 20,
     cursor: 'pointer',
@@ -757,7 +749,7 @@ const styles = {
   },
   expandToggleBtn: {
     background: 'transparent',
-    color: '#9ca3af',
+    color: 'var(--text-secondary)',
     border: 'none',
     cursor: 'pointer',
     outline: 'none',
@@ -774,8 +766,8 @@ const styles = {
     left: 0,
     width: '60%',
     height: '100%',
-    background: 'rgba(11, 15, 26, 0.95)',
-    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-app)',
+    borderRight: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',
     zIndex: 9999,
@@ -786,18 +778,18 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '12px 16px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    borderBottom: '1px solid var(--border-subtle)',
   },
   drawerTitle: {
-    color: '#ffffff',
+    color: 'var(--text-primary)',
     fontSize: 12,
     fontWeight: 700,
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
   newThreadBtn: {
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#ffffff',
+    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
+    color: 'var(--accent-contrast)',
     border: 'none',
     borderRadius: 4,
     padding: '4px 8px',
@@ -825,7 +817,7 @@ const styles = {
     transition: 'all 0.2s',
   },
   drawerItemTitle: {
-    color: '#e5e7eb',
+    color: 'var(--text-primary)',
     fontSize: 13,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -835,7 +827,7 @@ const styles = {
   },
   deleteThreadBtn: {
     background: 'transparent',
-    color: '#ef4444',
+    color: 'var(--danger)',
     border: 'none',
     fontSize: 16,
     cursor: 'pointer',
@@ -845,40 +837,48 @@ const styles = {
   },
   chatHistory: {
     flex: 1,
-    padding: 16,
+    padding: '18px 16px',
     overflowY: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    gap: 12,
+    gap: 14,
   },
   message: {
-    maxWidth: '85%',
-    padding: '10px 14px',
+    padding: '11px 14px',
     borderRadius: 14,
     fontSize: 13,
-    lineHeight: '1.5',
-    wordBreak: 'break-word',
+    lineHeight: 1.6,
+    // `break-word` alone splits long tickers and OCC symbols mid-token; this only breaks
+    // where a word genuinely cannot fit.
+    overflowWrap: 'anywhere',
+    minWidth: 0,
   },
   userMessage: {
     alignSelf: 'flex-end',
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#ffffff',
-    borderBottomRightRadius: 2,
-    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)',
+    // A question is short; keeping it narrow makes the conversation easy to scan.
+    maxWidth: '82%',
+    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
+    color: 'var(--accent-contrast)',
+    borderBottomRightRadius: 3,
+    boxShadow: 'var(--shadow-soft)',
   },
   assistantMessage: {
-    alignSelf: 'flex-start',
-    background: 'rgba(255, 255, 255, 0.05)',
-    color: '#e5e7eb',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
-    borderBottomLeftRadius: 2,
+    alignSelf: 'stretch',
+    // Analytical answers carry headings, lists and comparison tables. Capping these at 85%
+    // squeezed tables into a narrow scroll strip for no benefit — nothing sits beside them.
+    maxWidth: '100%',
+    background: 'var(--bg-elevated)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
+    borderBottomLeftRadius: 3,
+    boxShadow: 'var(--shadow-card)',
   },
   previewContainer: {
     display: 'flex',
     gap: 8,
     padding: '8px 16px',
-    background: 'rgba(0, 0, 0, 0.15)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+    background: 'var(--bg-input)',
+    borderTop: '1px solid var(--border-subtle)',
     overflowX: 'auto',
   },
   previewWrapper: {
@@ -888,7 +888,7 @@ const styles = {
     borderRadius: 6,
     overflow: 'hidden',
     flexShrink: 0,
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid var(--border)',
   },
   previewImage: {
     width: '100%',
@@ -902,6 +902,8 @@ const styles = {
     width: 16,
     height: 16,
     borderRadius: '50%',
+    // Deliberately fixed rather than themed: this sits on top of an arbitrary image
+    // thumbnail, so it needs its own scrim regardless of the surrounding theme.
     background: 'rgba(0, 0, 0, 0.7)',
     color: '#ffffff',
     border: 'none',
@@ -917,12 +919,12 @@ const styles = {
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    background: 'rgba(255, 255, 255, 0.02)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+    background: 'var(--bg-muted)',
+    borderTop: '1px solid var(--border-subtle)',
   },
   attachButton: {
     background: 'transparent',
-    color: '#9ca3af',
+    color: 'var(--text-secondary)',
     border: 'none',
     display: 'flex',
     alignItems: 'center',
@@ -934,11 +936,11 @@ const styles = {
   },
   inputField: {
     flex: 1,
-    background: 'rgba(0, 0, 0, 0.2)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border)',
     borderRadius: 8,
     padding: '8px 12px',
-    color: '#ffffff',
+    color: 'var(--text-primary)',
     fontSize: 13,
     outline: 'none',
     resize: 'none',
@@ -950,14 +952,14 @@ const styles = {
     width: 36,
     height: 36,
     borderRadius: 8,
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#ffffff',
+    background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
+    color: 'var(--accent-contrast)',
     border: 'none',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+    boxShadow: 'var(--shadow-soft)',
     outline: 'none',
   },
   loader: {
@@ -970,7 +972,7 @@ const styles = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: '#9ca3af',
+    background: 'var(--text-secondary)',
     animation: 'react-pulse-loader 1.4s infinite ease-in-out both',
   },
 };
