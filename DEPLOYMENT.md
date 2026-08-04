@@ -72,6 +72,26 @@ Add the environment variables from [the tables below](#environment-variables), a
 `PULSE_URL` cannot be known before the first deploy. Deploy once, read the production
 domain off the deployment, then set it and redeploy.
 
+### Setting the secrets
+
+[.env.vercel.example](.env.vercel.example) lists every variable with notes on where each
+value comes from. Fill in a local copy and push the lot in one go:
+
+```sh
+cp .env.vercel.example .env.vercel
+# fill in your values
+./scripts/vercel-env-push.sh --dry-run   # names and value lengths only, changes nothing
+./scripts/vercel-env-push.sh             # pushes, then redeploys
+```
+
+`.env.vercel` is gitignored. [The script](scripts/vercel-env-push.sh) pipes each value to
+`vercel env add` on stdin rather than passing it as an argument, so nothing lands in your
+shell history or in the process list. Blank entries are skipped, so unused optional
+variables can be left empty. Existing values are replaced.
+
+Environment changes only reach the running app on the next build, which is why the script
+redeploys — pass `--no-deploy` to batch several rounds of edits first.
+
 `PULSE_PATH_PREFIX` is what makes Pulse work under `/pulse`. A service receives the
 **original** request path, so Pulse's function sees `/pulse/api/status`, not
 `/api/status`. With the prefix set, [owls-street-pulse/api/index.py](owls-street-pulse/api/index.py)
