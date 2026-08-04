@@ -239,3 +239,59 @@ def test_dashboard_resolves_its_own_calls_against_the_prefix():
 
     for unprefixed in ('fetch("/api', "fetch('/api", 'fetch("/auth', 'href = "/api'):
         assert unprefixed not in html, f"{unprefixed} bypasses resolveUrl()"
+
+
+# ── The api/index.py entrypoint ─────────────────────────────────────────────────
+#
+# One entrypoint serves both deployment shapes. PULSE_PATH_PREFIX is set when both apps
+# share a single Vercel project, where Vercel hands the function the original request path
+# and Pulse is served under /pulse.
+
+def _load_entrypoint(prefix):
+    """Import api/index.py fresh under a given PULSE_PATH_PREFIX."""
+    import importlib.util
+
+    entrypoint = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "api", "index.py"
+    )
+    env = {"PULSE_PATH_PREFIX": prefix} if prefix is not None else {}
+    with patch.dict(os.environ, env, clear=False):
+        if prefix is None:
+            os.environ.pop("PULSE_PATH_PREFIX", None)
+        spec = importlib.util.spec_from_file_location("pulse_entrypoint", entrypoint)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    return TestClient(module.app)
+
+
+def test_entrypoint_serves_at_the_domain_root_without_a_prefix():
+    c = _load_entrypoint(None)
+    assert c.get("/api/status").status_code == 200
+    assert c.get("/").status_code == 200
+
+
+def test_entrypoint_serves_under_a_prefix_when_configured():
+    c = _load_entrypoint("/pulse")
+    assert c.get("/pulse/api/status").status_code == 200
+    assert "Owls Street Pulse" in c.get("/pulse/").text
+
+
+def test_a_prefixed_entrypoint_does_not_answer_unprefixed_paths():
+    """Confirms the mount, not a catch-all, is what handles the prefix."""
+    c = _load_entrypoint("/pulse")
+    assert c.get("/api/status").status_code == 404
+
+
+def test_a_trailing_slash_in_the_prefix_is_tolerated():
+    c = _load_entrypoint("/pulse/")
+    assert c.get("/pulse/api/status").status_code == 200
+
+
+def test_entrypoint_exposes_app_as_a_top_level_assignment():
+    """Vercel resolves "api.index:app" by inspecting top-level definitions."""
+    source = open(
+        os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "api", "index.py"
+        )
+    ).read()
+    assert "\napp = " in source

@@ -1,6 +1,6 @@
-# Keep the upload — and the api/pulse.py bundle, which globs the whole Pulse app — free of
-# local artifacts and anything a serverless function never runs. `vercel` from the CLI does
-# not read .gitignore, so virtualenvs must be named here explicitly or they are uploaded.
+# Keep the upload free of local artifacts and anything a serverless function never runs.
+# `vercel` from the CLI does not read .gitignore, so virtualenvs must be named here
+# explicitly or they are uploaded.
 .venv/
 venv/
 **/.venv/

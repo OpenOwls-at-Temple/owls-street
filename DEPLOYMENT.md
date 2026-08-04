@@ -21,30 +21,43 @@ prices.
 
 ## 1. Dashboards on Vercel
 
-Both apps deploy as **one Vercel project** rooted at the repository root, driven by
-[vercel.json](vercel.json). The view answers at the domain root and Pulse is served under
-`/pulse`:
+Everything deploys as **one Vercel project** using [Vercel Services](https://vercel.com/docs/services),
+which builds several apps in a single project with shared routing, environment variables,
+and one domain. [vercel.json](vercel.json) declares three services and the top-level
+rewrites that expose them:
 
-| Path | Served by |
-| --- | --- |
-| `/` and the SPA's assets | `owls-street-view/frontend/build`, from the CDN |
-| `/api/*`, `/auth/*` | [api/view.py](api/view.py) → `owls-street-view/src/web.py` |
-| `/pulse`, `/pulse/*` | [api/pulse.py](api/pulse.py) → `owls-street-pulse/src/vercel_app.py` |
+| Path | Service | Root |
+| --- | --- | --- |
+| `/pulse`, `/pulse/*` | `pulse` | `owls-street-pulse` (FastAPI, `api.index:app`) |
+| `/api/*`, `/auth/*` | `view` | `owls-street-view` (FastAPI, `api.index:app`) |
+| everything else | `frontend` | `owls-street-view/frontend` (the React SPA, from the CDN) |
 
-One project means one build, one domain, and one set of environment variables, which is
-what lets the two apps agree on `DASHBOARD_PASSWORD` — see [Owl Speaks needs a matching
-password](#owl-speaks-needs-a-matching-password-on-both-services). It also puts the
-embedded Pulse dashboard on the same origin as the view, so the iframe's theme sync works.
+A service is private until a top-level rewrite targets it, and routing into one is final —
+if nothing inside it matches, Vercel returns that service's 404 rather than falling through
+to the next rewrite.
+
+Each service builds independently from **its own root**, so each Python service installs
+its own `requirements.txt` and the SPA builds with its own `package.json`. There is no
+merged dependency list to keep in sync.
+
+One project also means one domain and one set of environment variables, which is what lets
+the two apps agree on `DASHBOARD_PASSWORD` — see [Owl Speaks needs a matching
+password](#owl-speaks-needs-a-matching-password-on-both-services) — and puts the embedded
+Pulse dashboard on the same origin as the view, so the iframe's theme sync works.
 
 ### Deploy it
 
 ```sh
 npx vercel link          # once, to create or attach the project
-npx vercel --prod
+npx vercel deploy        # a preview build, to check it first
+npx vercel deploy --prod
 ```
 
-Leave **Root Directory** empty (the repository root). Add the environment variables from
-[the tables below](#environment-variables), at minimum:
+Leave **Root Directory** empty. Vercel reads the per-service roots from `vercel.json`;
+setting a Root Directory would scope the whole project to a subfolder and the services
+would not be found.
+
+Add the environment variables from [the tables below](#environment-variables), at minimum:
 
 | Variable | Value |
 | --- | --- |
@@ -52,11 +65,19 @@ Leave **Root Directory** empty (the repository root). Add the environment variab
 | `ALPACA_API_SECRET` | the same secret again — Pulse's chat context reads this name |
 | `SSO_JWT_SECRET` | a random string; without it both apps fall back to a hardcoded default |
 | `DASHBOARD_PASSWORD` | shared by both apps, and how the view authenticates its chat proxy |
+| `PULSE_PATH_PREFIX` | `/pulse` — required, see below |
 | `PULSE_URL` | `https://<your-domain>/pulse` |
 | `OLLAMA_API_KEY` | an [Ollama Cloud](#owl-speaks-on-vercel) key, for chat — or `OLLAMA_BASE_URL` if you host the endpoint yourself |
 
-`PULSE_URL` cannot be known before the first deploy. Deploy once, then set it to the
-generated domain and redeploy.
+`PULSE_URL` cannot be known before the first deploy. Deploy once, read the production
+domain off the deployment, then set it and redeploy.
+
+`PULSE_PATH_PREFIX` is what makes Pulse work under `/pulse`. A service receives the
+**original** request path, so Pulse's function sees `/pulse/api/status`, not
+`/api/status`. With the prefix set, [owls-street-pulse/api/index.py](owls-street-pulse/api/index.py)
+mounts the app under it, which strips the prefix for routing and leaves the app's own route
+table identical to the copy that serves from a domain root. Leave it **unset** for local
+development and for a project-per-app deployment, where Pulse already owns its root path.
 
 ### Owl Speaks on Vercel
 
@@ -106,9 +127,11 @@ endpoints return `503` and the UI explains why. The engine moves to GitHub Actio
 
 The per-app configs ([owls-street-view/vercel.json](owls-street-view/vercel.json),
 [owls-street-pulse/vercel.json](owls-street-pulse/vercel.json)) still work if you prefer a
-project per app, each with **Root Directory** set to its subfolder. You then have two
-domains, and must keep `DASHBOARD_PASSWORD` and `SSO_JWT_SECRET` identical across both by
-hand. Set **Ignored Build Step** per project to skip no-op builds:
+project per app — or if your account does not have the `services` permission. Each gets
+**Root Directory** set to its subfolder, and `PULSE_PATH_PREFIX` stays unset because Pulse
+owns its own root path there. You then have two domains, and must keep
+`DASHBOARD_PASSWORD` and `SSO_JWT_SECRET` identical across both by hand. Set **Ignored
+Build Step** per project to skip no-op builds:
 
 ```sh
 git diff --quiet HEAD^ HEAD -- .
@@ -345,18 +368,27 @@ Details behind the [free deployment](#1-dashboards-on-vercel) above:
   and more work than the Actions route for a worse result.
 - **No live quote stream.** `/ws/quotes` is a WebSocket, unsupported on any Vercel plan.
   The dashboard loads and REST calls work; streaming prices don't.
-- **Cold starts.** Both functions pull in `pandas` and `alpaca-py` — Vercel installs the
-  root [requirements.txt](requirements.txt) for every Python function, so Pulse carries the
-  view's dependencies too. Chat imports the agent lazily so endpoints that never chat don't
-  pay for it.
-- **Root `requirements.txt` is a third copy.** The per-app files stay authoritative for
-  local development, Docker, and CI. Update this one whenever either of those changes.
-- **Why Pulse is mounted, not rewritten.** Vercel passes the function the original request
-  path, so `api/pulse.py` sees `/pulse/api/status`. Mounting the app at `/pulse` strips the
-  prefix for routing, leaving the app identical to the copy that serves from a domain root.
-  The dashboard's own calls go through `resolveUrl()`, which adds the same prefix.
+- **Cold starts.** The view's function pulls in `pandas` and `alpaca-py`. Pulse's chat needs
+  them too, but imports the agent lazily, so its endpoints that never chat don't pay for it.
+- **Each service installs its own dependencies.** Per-service roots mean
+  `owls-street-view/requirements.txt` and `owls-street-pulse/requirements.txt` are used
+  directly — the same files local development, Docker, and CI use. Nothing to keep in sync.
+- **Why Pulse is mounted rather than path-rewritten.** A service receives the original
+  request path, so Pulse's function sees `/pulse/api/status`. Mounting under
+  `PULSE_PATH_PREFIX` strips it for routing, leaving the app identical to the copy that
+  serves from a domain root. Vercel can do this instead with a `request.path` transform in
+  the service's `routes`; doing it in the app keeps the behaviour testable with the rest of
+  the suite and portable to hosts with no equivalent feature. The dashboard's own calls go
+  through `resolveUrl()`, which adds the same prefix.
 - **`/pulse` state is per-invocation.** `WEB_DB_PATH` defaults to `/tmp/alerts.db` because
   nothing else is writable. Nothing in this mode writes to it; chat reads it if present.
+- **Pin the Python version.** Each app has a `.python-version` of `3.12`, matching CI.
+  Without it the builder picks its own default, and `vercel build` run locally will
+  generate a `pyproject.toml` and `uv.lock` from whatever Python the machine has — both are
+  gitignored for that reason.
+- **`services` is in Beta** and gated on a permission for your Vercel account. If a deploy
+  rejects the `services` key, fall back to
+  [a project per app](#two-projects-instead-of-one).
 
 ## Local development
 

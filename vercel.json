@@ -1,26 +1,26 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "installCommand": "npm install --prefix owls-street-view/frontend --no-audit --no-fund",
-  "buildCommand": "npm run build --prefix owls-street-view/frontend",
-  "outputDirectory": "owls-street-view/frontend/build",
-  "functions": {
-    "api/view.py": {
-      "memory": 1024,
-      "maxDuration": 60,
-      "includeFiles": "owls-street-view/src/**"
+  "services": {
+    "frontend": {
+      "root": "owls-street-view/frontend",
+      "outputDirectory": "build"
     },
-    "api/pulse.py": {
-      "memory": 1024,
-      "maxDuration": 60,
-      "includeFiles": "owls-street-pulse/**"
+    "view": {
+      "root": "owls-street-view",
+      "framework": "fastapi",
+      "entrypoint": "api.index:app"
+    },
+    "pulse": {
+      "root": "owls-street-pulse",
+      "framework": "fastapi",
+      "entrypoint": "api.index:app"
     }
   },
   "rewrites": [
-    { "source": "/pulse", "destination": "/api/pulse" },
-    { "source": "/pulse/(.*)", "destination": "/api/pulse" },
-    { "source": "/api/(.*)", "destination": "/api/view" },
-    { "source": "/auth/(.*)", "destination": "/api/view" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/pulse", "destination": { "service": "pulse" } },
+    { "source": "/pulse/(.*)", "destination": { "service": "pulse" } },
+    { "source": "/api/(.*)", "destination": { "service": "view" } },
+    { "source": "/auth/(.*)", "destination": { "service": "view" } },
+    { "source": "/(.*)", "destination": { "service": "frontend" } }
   ]
 }
