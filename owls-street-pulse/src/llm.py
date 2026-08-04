@@ -6,7 +6,7 @@ Two shapes are supported, both speaking the same native Ollama chat API:
   laptop or a container on the same host, and unreachable from a serverless function.
 * **Ollama Cloud** — set `OLLAMA_API_KEY` and requests go to `https://ollama.com` with a
   bearer token. This is what makes chat work on Vercel without exposing a machine of your
-  own. Cloud model names differ from local ones (`gpt-oss:120b`, not `llama3.1`), so the
+  own. Cloud model names differ from local ones (`mistral-large-3:675b`, not `llama3.1`), so the
   default model follows the endpoint.
 
 `OLLAMA_BASE_URL` overrides the choice either way, for an Ollama-compatible endpoint hosted
@@ -28,7 +28,13 @@ OLLAMA_CLOUD_BASE_URL = "https://ollama.com"
 # Cloud models are a different catalogue from whatever is pulled locally, so the local
 # default would 404. Overridable with OLLAMA_MODEL; see https://ollama.com/search for the
 # current list.
-DEFAULT_OLLAMA_CLOUD_MODEL = "gpt-oss:120b"
+#
+# Chosen because Owl Speaks accepts pasted chart screenshots, and most of the cloud
+# catalogue cannot read them: gpt-oss, glm-5.2 and deepseek-v4-pro all reject a request
+# carrying `images` with a 400. Of the models that do accept images, this one answers a
+# quantitative technical-analysis prompt as accurately as the alternatives and noticeably
+# faster, which matters for an interactive chat.
+DEFAULT_OLLAMA_CLOUD_MODEL = "mistral-large-3:675b"
 
 # Hosts that only resolve to the machine running the process. A container or a laptop has
 # an Ollama here; a serverless function never does.

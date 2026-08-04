@@ -9,6 +9,7 @@ from src.engine import calculate_lookback_start
 from src.indicators import evaluate_indicator_rule
 from src.database import StateDatabase
 from src.llm import (
+    DEFAULT_OLLAMA_CLOUD_MODEL,
     ollama_auth_headers,
     ollama_base_url,
     ollama_is_local,
@@ -358,6 +359,19 @@ class OwlSpeaksAgent:
                     f"⚠️ **Ollama Authentication Error ({e.response.status_code})**\n\n"
                     f"The endpoint at `{base_url}` requires authentication and no API key is "
                     "configured. Set `OLLAMA_API_KEY` in this deployment's environment."
+                )
+
+            # Much of the Ollama Cloud catalogue rejects a request carrying `images` with a
+            # bare 400, which is indistinguishable from a malformed payload unless the
+            # attachment is called out.
+            if e.response.status_code == 400 and images:
+                return (
+                    f"⚠️ **Ollama API Error (400)**\n\n"
+                    f"`{model_name}` rejected this request, which included "
+                    f"{len(images)} image(s): {detail}\n\n"
+                    "Most models cannot read images. Either send the question without an "
+                    "attachment, or set `OLLAMA_MODEL` to a vision-capable model — "
+                    f"`{DEFAULT_OLLAMA_CLOUD_MODEL}` and `minimax-m3` both accept them."
                 )
 
             if e.response.status_code == 404:

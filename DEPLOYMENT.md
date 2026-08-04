@@ -111,12 +111,12 @@ leave `OLLAMA_BASE_URL` unset:
 
 ```
 OLLAMA_API_KEY=<your key>
-OLLAMA_MODEL=gpt-oss:120b       # optional; this is the default when a key is set
+OLLAMA_MODEL=mistral-large-3:675b   # optional; this is the default when a key is set
 ```
 
 Requests then go to `https://ollama.com/api/chat` with a bearer token. It is the same
 native API a local Ollama serves, so nothing else changes. Cloud model names are a
-different catalogue from a local install's — `gpt-oss:120b`, not `llama3.1` — which is why
+different catalogue from a local install's — `mistral-large-3:675b`, not `llama3.1` — which is why
 the default model follows the endpoint. See [ollama.com/search](https://ollama.com/search)
 for what is available.
 
@@ -289,7 +289,7 @@ it has no volumes and can be rebuilt or scaled freely.
 | `DASHBOARD_PASSWORD` | optional | Enables password auth |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` / `ALLOWED_EMAILS` | optional | Google SSO (Pulse has no Microsoft SSO) |
 | `OLLAMA_API_KEY` | optional | [Ollama Cloud](https://ollama.com/settings/keys) key. Implies `https://ollama.com` when `OLLAMA_BASE_URL` is unset, and is sent as a bearer token either way |
-| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | optional | Owl Speaks chat agent. Default to `http://localhost:11434` and `llama3.1`, or `https://ollama.com` and `gpt-oss:120b` when a key is set. The loopback default is unreachable on Vercel |
+| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | optional | Owl Speaks chat agent. Default to `http://localhost:11434` and `llama3.1`, or `https://ollama.com` and `mistral-large-3:675b` when a key is set. The loopback default is unreachable on Vercel |
 | `PULSE_GOOGLE_REDIRECT_URI` | combined Vercel only | `https://<domain>/pulse/api/auth/google/callback`. Overrides `GOOGLE_REDIRECT_URI` for Pulse alone |
 | `WEB_CONFIG_PATH` / `WEB_DB_PATH` | optional | Override config and database locations |
 

@@ -287,7 +287,7 @@ def test_cloud_request_carries_the_bearer_token(mock_post, tmp_path):
     assert res == "hi"
     assert mock_post.call_args.args[0] == "https://ollama.com/api/chat"
     assert mock_post.call_args.kwargs["headers"] == {"Authorization": "Bearer sk-test"}
-    assert mock_post.call_args.kwargs["json"]["model"] == "gpt-oss:120b"
+    assert mock_post.call_args.kwargs["json"]["model"] == "mistral-large-3:675b"
 
 
 @patch("httpx.AsyncClient.post")
@@ -351,3 +351,41 @@ def test_an_absent_model_names_the_variable_to_change(mock_post, tmp_path):
 
     assert "Model Error" in res
     assert "OLLAMA_MODEL" in res
+
+
+def test_the_cloud_default_model_can_read_images(tmp_path):
+    """Owl Speaks accepts pasted chart screenshots, so its default must support vision.
+
+    Most of the Ollama Cloud catalogue does not — gpt-oss, glm-5.2 and deepseek-v4-pro all
+    reject a request carrying `images` with a 400. Picking one of those as the default
+    silently breaks the attachment feature.
+    """
+    from src.llm import DEFAULT_OLLAMA_CLOUD_MODEL
+
+    assert DEFAULT_OLLAMA_CLOUD_MODEL in ("mistral-large-3:675b", "minimax-m3")
+
+
+@patch("httpx.AsyncClient.post")
+def test_a_400_with_images_attached_blames_the_model_not_the_payload(mock_post, tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+    mock_post.side_effect = _http_status_error(400, {"error": "invalid request"})
+
+    env = {"OLLAMA_API_KEY": "sk-test", "OLLAMA_MODEL": "gpt-oss:120b"}
+    with patch.dict(os.environ, env, clear=True):
+        res = asyncio.run(agent.generate_response(user_message="read this", images=["Ym9ndXM="]))
+
+    assert "1 image(s)" in res
+    assert "cannot read images" in res
+    assert "OLLAMA_MODEL" in res
+
+
+@patch("httpx.AsyncClient.post")
+def test_a_400_without_images_stays_generic(mock_post, tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+    mock_post.side_effect = _http_status_error(400, {"error": "invalid request"})
+
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "sk-test"}, clear=True):
+        res = asyncio.run(agent.generate_response(user_message="hello"))
+
+    assert "cannot read images" not in res
+    assert "400" in res
