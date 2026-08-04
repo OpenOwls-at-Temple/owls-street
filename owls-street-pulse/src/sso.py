@@ -33,6 +33,31 @@ GOOGLE_USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/userinfo"
 STATE_COOKIE = "oauth_state"
 ORIGIN_COOKIE = "sso_redirect_origin"
 
+# Pulse's own session cookie, and the view's. The names differ so that two apps on one
+# domain do not overwrite each other's session.
+SESSION_COOKIE = "pulse_session_token"
+VIEW_SESSION_COOKIE = "session_token"
+
+
+def session_tokens(request) -> list:
+    """Session tokens to try, Pulse's own cookie first, then the view's.
+
+    Accepting the view's cookie is what makes one sign-in cover both dashboards. It is sound
+    because the two apps share a signing key: auth_helper.py is identical in both, and
+    SSO_JWT_SECRET comes from the same environment, so a token the view minted verifies here
+    with no further trust needed. Without this, the Pulse dashboard embedded in the view's
+    Pulse Alerts tab shows its own lockscreen to an already-signed-in user — and its Google
+    button leads to a 403, because Google refuses to render sign-in inside an iframe.
+
+    Only relevant when both apps share a domain. On separate domains the browser never sends
+    the view's cookie here, and this falls back to Pulse's own.
+    """
+    candidates = (
+        request.cookies.get(SESSION_COOKIE),
+        request.cookies.get(VIEW_SESSION_COOKIE),
+    )
+    return [token for token in candidates if token]
+
 
 class SsoError(Exception):
     """Raised when a sign-in attempt cannot be completed. Message is caller-safe."""

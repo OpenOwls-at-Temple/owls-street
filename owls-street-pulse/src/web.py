@@ -130,15 +130,14 @@ def verify_dashboard_password(request: Request):
     if not (password_enabled or google_enabled):
         return True  # Auth is disabled if none are set
         
-    token = request.cookies.get("pulse_session_token")
-    if token == password:
-        return True
-        
-    # Check if valid JWT
-    payload = verify_jwt(token)
-    if payload:
-        return True
-        
+    # Pulse's own cookie first, then the view's, so one sign-in covers both dashboards when
+    # they share a domain. See sso.session_tokens for why trusting the view's is sound.
+    for token in sso.session_tokens(request):
+        if password_enabled and token == password:
+            return True
+        if verify_jwt(token):
+            return True
+
     raise HTTPException(status_code=401, detail="Unauthorized")
 
 # Initialize Web Configuration paths from environment (passed from CLI)

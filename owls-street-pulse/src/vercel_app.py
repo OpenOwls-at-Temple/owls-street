@@ -112,11 +112,13 @@ def _auth_state(request: Request) -> dict:
     user = None
     authorized = not auth_enabled  # wide open only when nothing is configured
 
-    token = request.cookies.get(SESSION_COOKIE)
-    if token and auth_enabled:
-        if password_enabled and token == password:
-            authorized = True
-        else:
+    if auth_enabled:
+        # Pulse's own cookie first, then the view's — one sign-in covers both dashboards
+        # when they share a domain. See sso.session_tokens.
+        for token in sso.session_tokens(request):
+            if password_enabled and token == password:
+                authorized = True
+                break
             payload = verify_jwt(token)
             if payload:
                 authorized = True
@@ -126,6 +128,7 @@ def _auth_state(request: Request) -> dict:
                     "provider": payload.get("provider"),
                     "avatar": payload.get("avatar"),
                 }
+                break
 
     return {
         "auth_enabled": auth_enabled,

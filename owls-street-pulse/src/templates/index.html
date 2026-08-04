@@ -1342,6 +1342,26 @@
             return url;
         }
 
+        // Identity-provider sign-in cannot run inside an iframe: Google answers a framed
+        // request to its consent screen with a 403 "you do not have access to this page".
+        // This dashboard *is* embedded — in the view's Pulse Alerts tab — so a sign-in
+        // redirect has to leave the frame. Normally moot, since a session on the view is
+        // already accepted here, but a directly framed and unauthenticated visit still needs
+        // somewhere to go.
+        function navigateForAuth(url) {
+            if (window.top === window.self) {
+                window.location.href = url;
+                return;
+            }
+            try {
+                window.top.location.href = url;
+            } catch (e) {
+                // A cross-origin embedder blocks reading window.top.location, so the only
+                // remaining option is a new tab.
+                window.open(url, "_blank", "noopener");
+            }
+        }
+
         async function initApp() {
             // Test connection/authentication
             try {
@@ -1428,10 +1448,10 @@
             if (e.key === "Enter") performUnlock();
         });
         document.getElementById("google-login-btn").addEventListener("click", () => {
-            window.location.href = resolveUrl("/api/auth/google/login");
+            navigateForAuth(resolveUrl("/api/auth/google/login"));
         });
         document.getElementById("temple-login-btn").addEventListener("click", () => {
-            window.location.href = resolveUrl("/api/auth/temple/login");
+            navigateForAuth(resolveUrl("/api/auth/temple/login"));
         });
         document.getElementById("auth-reload-btn").addEventListener("click", () => {
             window.location.reload();

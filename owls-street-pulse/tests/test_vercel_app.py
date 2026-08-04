@@ -295,3 +295,91 @@ def test_entrypoint_exposes_app_as_a_top_level_assignment():
         )
     ).read()
     assert "\napp = " in source
+
+
+# ── One sign-in across both dashboards ─────────────────────────────────────────
+#
+# The view's session cookie is accepted here so that the Pulse dashboard embedded in the
+# view's Pulse Alerts tab does not show its own lockscreen to a signed-in user. It is sound
+# because auth_helper.py is identical in both apps and SSO_JWT_SECRET is shared, so a token
+# the view minted verifies here without extending trust to anything new.
+
+from src.auth_helper import create_jwt  # noqa: E402
+from src import sso  # noqa: E402
+
+
+def _view_jwt(email="someone@example.com"):
+    return create_jwt(sso.session_payload(email, "Someone"))
+
+
+def test_the_views_session_authorizes_pulse():
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "test-pass", "SSO_JWT_SECRET": "shared"}):
+        c = TestClient(app)
+        c.cookies.set(sso.VIEW_SESSION_COOKIE, _view_jwt())
+        body = c.get("/api/status").json()
+    assert body["authorized"] is True
+    assert body["user"]["email"] == "someone@example.com"
+
+
+def test_pulses_own_session_still_authorizes_it():
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "test-pass", "SSO_JWT_SECRET": "shared"}):
+        c = TestClient(app)
+        c.cookies.set(sso.SESSION_COOKIE, _view_jwt("owner@example.com"))
+        body = c.get("/api/status").json()
+    assert body["authorized"] is True
+
+
+def test_the_views_password_cookie_authorizes_pulse():
+    """The chat proxy sends the shared password; a browser on the view sends the same name."""
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "test-pass"}):
+        c = TestClient(app)
+        c.cookies.set(sso.VIEW_SESSION_COOKIE, "test-pass")
+        assert c.get("/api/status").json()["authorized"] is True
+
+
+def test_a_forged_view_session_is_still_rejected():
+    """Accepting the cookie name must not mean accepting an unverifiable token."""
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "test-pass", "SSO_JWT_SECRET": "shared"}):
+        c = TestClient(app)
+        c.cookies.set(sso.VIEW_SESSION_COOKIE, "not.a.real.jwt")
+        body = c.get("/api/status").json()
+    assert body["authorized"] is False
+    assert body["user"] is None
+
+
+def test_a_session_signed_with_another_secret_is_rejected():
+    with patch.dict(os.environ, {"SSO_JWT_SECRET": "the-issuers-secret"}):
+        foreign = _view_jwt("attacker@example.com")
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "test-pass", "SSO_JWT_SECRET": "our-secret"}):
+        c = TestClient(app)
+        c.cookies.set(sso.VIEW_SESSION_COOKIE, foreign)
+        assert c.get("/api/status").json()["authorized"] is False
+
+
+def test_no_cookie_is_still_unauthorized():
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "test-pass"}):
+        assert TestClient(app).get("/api/status").json()["authorized"] is False
+
+
+def test_chat_accepts_the_views_session(routable_ollama):
+    """The end the user actually notices: chat from the view's tab, no second sign-in."""
+    with patch.dict(os.environ, {"DASHBOARD_PASSWORD": "test-pass", "SSO_JWT_SECRET": "shared"}):
+        c = TestClient(app)
+        c.cookies.set(sso.VIEW_SESSION_COOKIE, _view_jwt())
+        with patch("src.chat.OwlSpeaksAgent.generate_response", new_callable=AsyncMock) as gen:
+            gen.return_value = "answered"
+            r = c.post("/api/chat", json={"message": "hi"})
+    assert r.status_code == 200
+
+
+def test_sign_in_redirects_leave_the_iframe():
+    """Google answers a framed consent screen with 403, so the redirect must break out."""
+    template = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "src", "templates", "index.html",
+    )
+    html = open(template).read()
+    assert "function navigateForAuth" in html
+    assert 'window.top.location.href' in html
+    # No auth redirect may navigate the frame itself.
+    assert 'location.href = resolveUrl("/api/auth' not in html
