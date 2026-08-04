@@ -38,20 +38,20 @@ const s = {
   title: { fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.2px' },
   addRow: { display: 'flex', gap: 8, padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(0, 0, 0, 0.15)' },
   input: {
-    flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10,
+    flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8,
     color: 'var(--text-primary)', padding: '8px 12px', fontSize: 13, outline: 'none',
     transition: 'border-color 0.2s',
   },
   addBtn: {
     background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-    color: '#fff', border: 'none', borderRadius: 10,
+    color: '#fff', border: 'none', borderRadius: 8,
     padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600,
     boxShadow: 'var(--shadow-soft)',
     transition: 'all 0.2s',
   },
   secondaryBtn: {
     background: 'var(--bg-elevated)',
-    color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 10,
+    color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8,
     padding: '8px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 500,
     transition: 'all 0.2s',
   },
@@ -69,7 +69,7 @@ const s = {
   },
   chainRow: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 },
   chainSelect: {
-    background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)',
+    background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)',
     padding: '8px 12px', fontSize: 12, outline: 'none', cursor: 'pointer',
   },
   chainList: { maxHeight: 180, overflowY: 'auto', borderTop: '1px solid var(--border-subtle)' },

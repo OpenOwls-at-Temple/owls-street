@@ -3,7 +3,7 @@ import { submitOrder } from '../api';
 import { isOptionSymbol } from '../symbols';
 
 const s = {
-  card: { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 20 },
+  card: { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -40,8 +40,8 @@ const s = {
   },
   row2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
   submitBtn: (side) => ({
-    width: '100%', padding: '10px 0', borderRadius: 6, border: 'none',
-    cursor: 'pointer', fontSize: 14, fontWeight: 600,
+    width: '100%', padding: '11px 0', borderRadius: 8, border: 'none',
+    cursor: 'pointer', fontSize: 13.5, fontWeight: 700,
     background: side === 'buy' ? 'var(--success)' : 'var(--danger)', color: 'var(--accent-contrast)',
   }),
   error: { fontSize: 12, color: 'var(--danger)', marginTop: 8, lineHeight: 1.35 },

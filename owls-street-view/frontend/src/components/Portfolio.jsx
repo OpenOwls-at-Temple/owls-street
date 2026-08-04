@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { closePosition } from '../api';
 
 const s = {
-  card: { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' },
+  card: { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' },
   title: { padding: '14px 18px', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
   th: { padding: '8px 16px', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 500, fontSize: 12 },

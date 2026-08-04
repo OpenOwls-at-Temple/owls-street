@@ -396,7 +396,7 @@ export default function App() {
   const workspaceBar = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
       <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Workspace</span>
-      <button type="button" onClick={saveWorkspace} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12, boxShadow: 'var(--shadow-soft)' }}>Save</button>
+      <button type="button" onClick={saveWorkspace} style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 11px', cursor: 'pointer', fontSize: 12, fontWeight: 600, boxShadow: 'var(--shadow-soft)' }}>Save</button>
       <button type="button" onClick={resetWorkspace} style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>Reset</button>
       <select value={chartSplit} onChange={(e) => setChartSplit(e.target.value)} style={{ background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontSize: 12 }}>
         <option value="single">Single chart</option>
@@ -724,7 +724,7 @@ export default function App() {
                       background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
                       color: 'var(--accent-contrast)',
                       border: 'none',
-                      borderRadius: 10,
+                      borderRadius: 8,
                       padding: '12px 24px',
                       fontSize: 14,
                       fontWeight: 600,
@@ -758,7 +758,7 @@ function AccountCard({ account }) {
     ['Day Trades', account.day_trade_count],
   ];
   return (
-    <div style={{ background: 'linear-gradient(180deg, var(--surface-grad-top), var(--surface-grad-bot)), var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, boxShadow: 'var(--shadow-card)' }}>
+    <div style={{ background: 'linear-gradient(180deg, var(--surface-grad-top), var(--surface-grad-bot)), var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, boxShadow: 'var(--shadow-card)' }}>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 12 }}>Account</div>
       {rows.map(([label, val]) => (
         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
@@ -797,7 +797,7 @@ const sidebarStyles = {
     width: 36,
     height: 36,
     background: 'linear-gradient(135deg, var(--accent), var(--accent-strong))',
-    borderRadius: 10,
+    borderRadius: 8,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

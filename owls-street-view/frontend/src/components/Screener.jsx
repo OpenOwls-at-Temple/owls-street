@@ -33,7 +33,7 @@ const s = {
   shell: {
     background: 'var(--bg-surface)',
     border: '1px solid var(--border)',
-    borderRadius: 10,
+    borderRadius: 8,
     boxShadow: 'var(--shadow-card)',
     overflow: 'visible',
   },
@@ -250,7 +250,7 @@ const s = {
     flexDirection: 'column',
     background: 'var(--bg-surface)',
     border: '1px solid var(--border)',
-    borderRadius: 10,
+    borderRadius: 8,
     boxShadow: 'var(--shadow-card)',
     zIndex: 40,
     overflow: 'hidden',

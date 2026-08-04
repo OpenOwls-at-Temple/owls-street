@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { cancelOrder, getOrderDetail, getOrders, replaceOrder } from '../api';
 
 const s = {
-  card: { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' },
+  card: { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' },
   topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', borderBottom: '1px solid var(--border)' },
   title: { fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' },
   tabs: { display: 'flex', gap: 4 },
