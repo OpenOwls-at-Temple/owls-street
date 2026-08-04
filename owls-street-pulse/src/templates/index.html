@@ -1573,7 +1573,7 @@
                     // OLLAMA_BASE_URL points somewhere a function can actually reach.
                     document.getElementById("serverless-chat-note").innerText = data.chat_available
                         ? "Owl Speaks chat is available."
-                        : "Owl Speaks chat needs OLLAMA_BASE_URL set to a reachable endpoint.";
+                        : "Owl Speaks chat needs OLLAMA_API_KEY, or OLLAMA_BASE_URL set to a reachable endpoint.";
 
                     ["stat-uptime", "stat-monitors", "stat-rules", "stat-dbsize", "stat-lastcheck"]
                         .forEach(id => { document.getElementById(id).innerText = "—"; });

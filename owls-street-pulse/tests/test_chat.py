@@ -268,3 +268,86 @@ def test_chat_endpoint_answers_when_the_config_will_not_load(tmp_path):
 
     assert response.status_code == 200
     assert response.json()["response"] == "Answered without market context."
+
+
+# ── Ollama Cloud ───────────────────────────────────────────────────────────────
+
+@patch("httpx.AsyncClient.post")
+def test_cloud_request_carries_the_bearer_token(mock_post, tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"message": {"role": "assistant", "content": "hi"}}
+    mock_post.return_value = mock_response
+
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "sk-test"}, clear=True):
+        res = asyncio.run(agent.generate_response(user_message="hello"))
+
+    assert res == "hi"
+    assert mock_post.call_args.args[0] == "https://ollama.com/api/chat"
+    assert mock_post.call_args.kwargs["headers"] == {"Authorization": "Bearer sk-test"}
+    assert mock_post.call_args.kwargs["json"]["model"] == "gpt-oss:120b"
+
+
+@patch("httpx.AsyncClient.post")
+def test_local_request_carries_no_authorization_header(mock_post, tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"message": {"role": "assistant", "content": "hi"}}
+    mock_post.return_value = mock_response
+
+    with patch.dict(os.environ, {}, clear=True):
+        asyncio.run(agent.generate_response(user_message="hello"))
+
+    assert mock_post.call_args.kwargs["headers"] == {}
+    assert mock_post.call_args.args[0] == "http://localhost:11434/api/chat"
+
+
+def _http_status_error(status_code, body):
+    """An httpx.HTTPStatusError as raise_for_status() would produce it."""
+    import httpx
+
+    request = httpx.Request("POST", "https://ollama.com/api/chat")
+    response = httpx.Response(status_code, json=body, request=request)
+    return httpx.HTTPStatusError("error", request=request, response=response)
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+@patch("httpx.AsyncClient.post")
+def test_a_rejected_key_is_reported_as_such(mock_post, status_code, tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+    mock_post.side_effect = _http_status_error(status_code, {"error": "invalid api key"})
+
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "sk-stale"}, clear=True):
+        res = asyncio.run(agent.generate_response(user_message="hello"))
+
+    assert "Authentication Error" in res
+    assert "rejected the configured API key" in res
+    assert "OLLAMA_API_KEY" in res
+
+
+@patch("httpx.AsyncClient.post")
+def test_a_missing_key_on_an_authenticating_endpoint_says_to_set_one(mock_post, tmp_path):
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+    mock_post.side_effect = _http_status_error(401, {"error": "unauthorized"})
+
+    with patch.dict(os.environ, {"OLLAMA_BASE_URL": "https://ollama.example.com"}, clear=True):
+        res = asyncio.run(agent.generate_response(user_message="hello"))
+
+    assert "no API key is configured" in res
+
+
+@patch("httpx.AsyncClient.post")
+def test_an_absent_model_names_the_variable_to_change(mock_post, tmp_path):
+    """The local default model does not exist in the cloud catalogue."""
+    agent = OwlSpeaksAgent(config=None, db_path=str(tmp_path / "alerts.db"))
+    mock_post.side_effect = _http_status_error(404, {"error": "model not found"})
+
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "sk-test", "OLLAMA_MODEL": "llama3.1"}, clear=True):
+        res = asyncio.run(agent.generate_response(user_message="hello"))
+
+    assert "Model Error" in res
+    assert "OLLAMA_MODEL" in res

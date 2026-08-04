@@ -91,7 +91,7 @@ Both applications use standalone helper scripts named `run.sh` to initialize the
 - **Node.js 16+** and `npm` (for building the frontend assets)
 - **Alpaca API Keys** (Free Paper or Live Account)
 - **Financial Modeling Prep (FMP) API Key** (optional, required for the fundamental scanning features of the Screener)
-- **Ollama** (optional, running locally for the Owl Speaks Chat Agent feature)
+- **Ollama** (optional, for the Owl Speaks Chat Agent — either running locally, or an [Ollama Cloud](https://ollama.com/settings/keys) key in `OLLAMA_API_KEY`)
 
 ### Step 1: Run the Alerting Engine (Pulse)
 

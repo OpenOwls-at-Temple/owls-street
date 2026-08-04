@@ -59,6 +59,50 @@ def test_unset_endpoint_defaults_to_loopback():
         assert vercel_app.chat_available() is False
 
 
+# ── Ollama Cloud ───────────────────────────────────────────────────────────────
+#
+# A key is the other way to make chat reachable from a function, and the simpler one: no
+# endpoint of your own to expose. It implies the cloud base URL, which in turn implies a
+# different default model — the local default is not in the cloud catalogue.
+
+def test_an_api_key_implies_the_cloud_endpoint():
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "sk-test"}, clear=True):
+        assert llm.ollama_base_url() == llm.OLLAMA_CLOUD_BASE_URL
+        assert llm.ollama_is_local() is False
+        assert vercel_app.chat_available() is True
+
+
+def test_an_api_key_implies_a_cloud_model():
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "sk-test"}, clear=True):
+        assert llm.ollama_model() == llm.DEFAULT_OLLAMA_CLOUD_MODEL
+
+
+def test_an_explicit_model_wins_over_the_cloud_default():
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "sk-test", "OLLAMA_MODEL": "kimi-k2.6"}, clear=True):
+        assert llm.ollama_model() == "kimi-k2.6"
+
+
+def test_an_explicit_base_url_wins_over_the_key():
+    """A self-hosted endpoint behind an authenticating proxy still wants the key sent."""
+    env = {"OLLAMA_API_KEY": "sk-test", "OLLAMA_BASE_URL": "http://ollama.internal:11434"}
+    with patch.dict(os.environ, env, clear=True):
+        assert llm.ollama_base_url() == "http://ollama.internal:11434"
+        assert llm.ollama_auth_headers() == {"Authorization": "Bearer sk-test"}
+
+
+def test_auth_headers_are_absent_without_a_key():
+    with patch.dict(os.environ, {}, clear=True):
+        assert llm.ollama_auth_headers() == {}
+
+
+def test_a_blank_api_key_is_not_a_key():
+    """An env var left empty in a dashboard must not read as configured."""
+    with patch.dict(os.environ, {"OLLAMA_API_KEY": "   "}, clear=True):
+        assert llm.ollama_api_key() == ""
+        assert llm.ollama_auth_headers() == {}
+        assert llm.ollama_base_url() == llm.DEFAULT_OLLAMA_BASE_URL
+
+
 def test_base_url_is_read_per_call_not_cached_at_import():
     """A serverless cold start imports well before the request that needs the value."""
     with patch.dict(os.environ, {"OLLAMA_BASE_URL": "http://first.example.com"}):

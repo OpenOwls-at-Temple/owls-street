@@ -8,7 +8,7 @@ Two supported shapes:
 | Alert engine | GitHub Actions cron, ~10 min | Background thread, 60 s |
 | Alert state | `pulse-state` branch | Persistent volume |
 | Live WebSocket quotes | ✗ | ✓ |
-| Owl Speaks chat | ✓ with a reachable Ollama | ✓ |
+| Owl Speaks chat | ✓ with an Ollama Cloud key | ✓ |
 | Cost | $0 | ~$5–15/mo |
 
 The free shape delivers alerts and serves both dashboards, which covers most of what the
@@ -53,7 +53,7 @@ Leave **Root Directory** empty (the repository root). Add the environment variab
 | `SSO_JWT_SECRET` | a random string; without it both apps fall back to a hardcoded default |
 | `DASHBOARD_PASSWORD` | shared by both apps, and how the view authenticates its chat proxy |
 | `PULSE_URL` | `https://<your-domain>/pulse` |
-| `OLLAMA_BASE_URL` | a publicly reachable Ollama, for chat — see [below](#owl-speaks-on-vercel) |
+| `OLLAMA_API_KEY` | an [Ollama Cloud](#owl-speaks-on-vercel) key, for chat — or `OLLAMA_BASE_URL` if you host the endpoint yourself |
 
 `PULSE_URL` cannot be known before the first deploy. Deploy once, then set it to the
 generated domain and redeploy.
@@ -62,15 +62,35 @@ generated domain and redeploy.
 
 Chat is one outbound call to an LLM, so it needs no persistent process and works here — but
 a serverless function has no loopback interface, so the default
-`OLLAMA_BASE_URL=http://localhost:11434` cannot resolve to anything. Point it at an Ollama
-reachable from the public internet:
+`OLLAMA_BASE_URL=http://localhost:11434` cannot resolve to anything.
 
-- a tunnel to a machine running Ollama (`cloudflared`, `tailscale funnel`, `ngrok`)
-- an Ollama-compatible endpoint you host elsewhere
+**The simplest fix is an Ollama Cloud key.** Create one at
+[ollama.com/settings/keys](https://ollama.com/settings/keys), set `OLLAMA_API_KEY`, and
+leave `OLLAMA_BASE_URL` unset:
 
-Pulse reports which state it is in: `/pulse/api/status` returns `chat_available`, the
-dashboard's serverless notice says so, and `POST /pulse/api/chat` answers `503` naming the
-variable to set rather than failing opaquely.
+```
+OLLAMA_API_KEY=<your key>
+OLLAMA_MODEL=gpt-oss:120b       # optional; this is the default when a key is set
+```
+
+Requests then go to `https://ollama.com/api/chat` with a bearer token. It is the same
+native API a local Ollama serves, so nothing else changes. Cloud model names are a
+different catalogue from a local install's — `gpt-oss:120b`, not `llama3.1` — which is why
+the default model follows the endpoint. See [ollama.com/search](https://ollama.com/search)
+for what is available.
+
+The alternative is hosting the endpoint yourself and setting `OLLAMA_BASE_URL` to it: a
+tunnel to a machine running Ollama (`cloudflared`, `tailscale funnel`, `ngrok`), or an
+Ollama-compatible endpoint elsewhere. An explicit `OLLAMA_BASE_URL` always wins over the
+key, and the key is still sent as a bearer token if both are set — which is what an Ollama
+behind an authenticating proxy wants.
+
+Pulse reports which state it is in rather than failing opaquely: `/pulse/api/status`
+returns `chat_available`, the dashboard's serverless notice says so, and
+`POST /pulse/api/chat` answers `503` naming the variables to set. Once configured, a
+rejected key, a missing key, and an absent model each get their own message — Ollama Cloud
+answers `401 {"error":"Unauthorized"}` identically whether a key is wrong or absent, so the
+distinction comes from what this deployment has configured.
 
 Chat degrades rather than breaks when market context is missing. Without a committed
 `owls-street-pulse/config/config.yaml` there are no monitors to compute indicators for, and
@@ -225,7 +245,8 @@ it has no volumes and can be rebuilt or scaled freely.
 | `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | optional | Alert destinations |
 | `DASHBOARD_PASSWORD` | optional | Enables password auth |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` / `ALLOWED_EMAILS` | optional | Google SSO (Pulse has no Microsoft SSO) |
-| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | optional | Owl Speaks chat agent. Defaults to `http://localhost:11434` and `llama3.1`; must be a publicly reachable address on Vercel |
+| `OLLAMA_API_KEY` | optional | [Ollama Cloud](https://ollama.com/settings/keys) key. Implies `https://ollama.com` when `OLLAMA_BASE_URL` is unset, and is sent as a bearer token either way |
+| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | optional | Owl Speaks chat agent. Default to `http://localhost:11434` and `llama3.1`, or `https://ollama.com` and `gpt-oss:120b` when a key is set. The loopback default is unreachable on Vercel |
 | `PULSE_GOOGLE_REDIRECT_URI` | combined Vercel only | `https://<domain>/pulse/api/auth/google/callback`. Overrides `GOOGLE_REDIRECT_URI` for Pulse alone |
 | `WEB_CONFIG_PATH` / `WEB_DB_PATH` | optional | Override config and database locations |
 
@@ -295,7 +316,8 @@ one value across both services to prevent this. If you configure the services by
 keep them in sync.
 
 Owl Speaks also needs a reachable Ollama instance, which Render does not provide — set
-`OLLAMA_BASE_URL` to an externally hosted endpoint or accept that chat stays unavailable.
+`OLLAMA_API_KEY` to use [Ollama Cloud](#owl-speaks-on-vercel), or `OLLAMA_BASE_URL` to an
+endpoint you host.
 
 ## Other managed hosts
 

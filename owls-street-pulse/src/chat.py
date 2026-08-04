@@ -8,7 +8,12 @@ from src.alpaca import AlpacaClient
 from src.engine import calculate_lookback_start
 from src.indicators import evaluate_indicator_rule
 from src.database import StateDatabase
-from src.llm import ollama_base_url, ollama_is_local, ollama_model
+from src.llm import (
+    ollama_auth_headers,
+    ollama_base_url,
+    ollama_is_local,
+    ollama_model,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -315,13 +320,15 @@ class OwlSpeaksAgent:
             "stream": False
         }
 
-        # 4. Query local Ollama API
+        # 4. Query the Ollama API — a local instance, Ollama Cloud, or any compatible
+        # endpoint. All three speak this same route; the bearer header is only present when
+        # a key is configured.
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(url, json=payload)
+                response = await client.post(url, json=payload, headers=ollama_auth_headers())
                 response.raise_for_status()
                 response_json = response.json()
-                
+
                 # Check format of Ollama response
                 if "message" in response_json and "content" in response_json["message"]:
                     return response_json["message"]["content"]
@@ -336,6 +343,31 @@ class OwlSpeaksAgent:
                 detail = err_json.get("error", {}).get("message") or err_json.get("error") or e.response.text
             except Exception:
                 detail = e.response.text
+
+            # A rejected key and a missing one look the same from the response body, so say
+            # which case this is rather than passing the bare status through.
+            if e.response.status_code in (401, 403):
+                if ollama_auth_headers():
+                    return (
+                        f"⚠️ **Ollama Authentication Error ({e.response.status_code})**\n\n"
+                        f"The endpoint at `{base_url}` rejected the configured API key: {detail}\n\n"
+                        "Check that `OLLAMA_API_KEY` is current — keys can be revoked at "
+                        "https://ollama.com/settings/keys."
+                    )
+                return (
+                    f"⚠️ **Ollama Authentication Error ({e.response.status_code})**\n\n"
+                    f"The endpoint at `{base_url}` requires authentication and no API key is "
+                    "configured. Set `OLLAMA_API_KEY` in this deployment's environment."
+                )
+
+            if e.response.status_code == 404:
+                return (
+                    f"⚠️ **Ollama Model Error ({e.response.status_code})**\n\n"
+                    f"The endpoint at `{base_url}` does not have the model `{model_name}`: {detail}\n\n"
+                    "Set `OLLAMA_MODEL` to a model it serves. Note that Ollama Cloud's "
+                    "catalogue differs from a local install's — see https://ollama.com/search."
+                )
+
             return f"⚠️ **Ollama API Error ({e.response.status_code})**: {detail}"
         except httpx.ConnectError:
             logger.error("Failed to connect to the Ollama instance at %s", base_url)
@@ -354,7 +386,8 @@ class OwlSpeaksAgent:
                 "Please make sure:\n"
                 "1. The endpoint is running and reachable from the internet.\n"
                 f"2. It serves the model `{model_name}`.\n"
-                "3. `OLLAMA_BASE_URL` is set to its public address in this deployment's environment."
+                "3. `OLLAMA_BASE_URL` is set to its public address in this deployment's "
+                "environment — or unset it and set `OLLAMA_API_KEY` to use Ollama Cloud."
             )
         except Exception as e:
             logger.error(f"Error querying Ollama API: {e}", exc_info=True)

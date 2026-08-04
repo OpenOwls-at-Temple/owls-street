@@ -366,9 +366,9 @@ async def chat(payload: ChatRequest, request: Request):
                 "status": "unavailable",
                 "message": (
                     "The Owl Speaks chat agent needs an Ollama endpoint reachable from this "
-                    "deployment. Set OLLAMA_BASE_URL to a publicly routable address (the "
-                    "default is a loopback address, which a serverless function has no "
-                    "access to)."
+                    "deployment, and OLLAMA_BASE_URL currently points at a loopback address "
+                    "a serverless function has no access to. Set OLLAMA_API_KEY to use "
+                    "Ollama Cloud, or point OLLAMA_BASE_URL at a publicly routable endpoint."
                 ),
             },
         )
