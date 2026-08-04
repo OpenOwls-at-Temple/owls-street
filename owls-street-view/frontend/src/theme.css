@@ -20,20 +20,20 @@
   /* Layers. Translucent on purpose, but at a fixed opacity per role so a surface's
      final colour is predictable instead of depending on whatever sits behind it. Charts and
      code keep an opaque canvas — text density there needs a stable ground. */
-  --bg-canvas: #0b0d10;
-  --bg-app: #0d0f13;
-  --bg-muted: rgba(20, 23, 28, 0.55);
-  --bg-surface: rgba(26, 29, 35, 0.62);
-  --bg-elevated: rgba(38, 42, 51, 0.72);
-  --bg-input: rgba(8, 9, 12, 0.55);
+  --bg-canvas: #0f1216;
+  --bg-app: #15181e;
+  --bg-muted: rgba(28, 32, 40, 0.6);
+  --bg-surface: rgba(34, 39, 48, 0.72);
+  --bg-elevated: rgba(48, 55, 67, 0.8);
+  --bg-input: rgba(10, 12, 16, 0.5);
 
   /* Glass: the blur, the hairline, and the 1px highlight along the top edge that reads as
      light catching a pane. The highlight is baked into the shadow tokens so every surface
      already using them picks it up. */
   --glass-blur: 18px;
-  --glass-highlight: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.1);
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --glass-highlight: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.13);
+  --border-subtle: rgba(255, 255, 255, 0.08);
 
   --text-primary: #e9ebee;
   --text-secondary: #a2a9b4;
@@ -63,8 +63,8 @@
      like flat grey. Kept low so it reads as light, not colour. */
   --surface-grad-top: rgba(255, 255, 255, 0.03);
   --surface-grad-bot: rgba(255, 255, 255, 0);
-  --app-grad-a: rgba(99, 102, 241, 0.1);
-  --app-grad-b: rgba(120, 140, 200, 0.06);
+  --app-grad-a: rgba(99, 102, 241, 0.16);
+  --app-grad-b: rgba(56, 189, 248, 0.09);
   --grid-line: rgba(255, 255, 255, 0.05);
 
   --radius-lg: 16px;
@@ -74,7 +74,7 @@
 
 [data-theme='light'] {
   --bg-canvas: #ffffff;
-  --bg-app: #eef0f4;
+  --bg-app: #e9ecf2;
   --bg-muted: rgba(255, 255, 255, 0.55);
   --bg-surface: rgba(255, 255, 255, 0.72);
   --bg-elevated: rgba(255, 255, 255, 0.88);
@@ -82,7 +82,7 @@
 
   --glass-blur: 18px;
   --glass-highlight: rgba(255, 255, 255, 0.8);
-  --border: rgba(16, 18, 22, 0.1);
+  --border: rgba(16, 18, 22, 0.13);
   --border-subtle: rgba(16, 18, 22, 0.06);
 
   --text-primary: #16181d;

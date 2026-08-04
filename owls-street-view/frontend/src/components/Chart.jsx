@@ -2875,19 +2875,6 @@ export default function ChartPanel({ symbol, theme }) {
               </span>
             )}
           </div>
-          {chartLayout !== CHART_LAYOUT.expanded && (
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-              <button
-                type="button"
-                style={s.fullScreenBtn}
-                title="Use the full window for the chart (Esc to exit)"
-                onClick={openFullScreenChart}
-              >
-                Full screen chart
-              </button>
-              <span style={s.fullScreenHint}>Maximize chart area · Esc to return</span>
-            </div>
-          )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
           <div style={{ ...s.tfRow, justifyContent: 'flex-end' }}>
