@@ -417,7 +417,7 @@ export default function App() {
   // Authentication gating
   if (authChecking) {
     return (
-      <div style={{ display: 'flex', width: '100vw', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0b0f19', color: '#fff' }}>
+      <div style={{ display: 'flex', width: '100vw', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app)', color: 'var(--text-primary)' }}>
         <div style={{ fontSize: 16, fontWeight: 500 }}>Initializing system...</div>
       </div>
     );
@@ -678,7 +678,7 @@ export default function App() {
 
           {activeTab === 'Pulse Alerts' && (
             <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: 'calc(100vh - 120px)', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', backdropFilter: 'blur(12px)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(0, 0, 0, 0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-muted)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: pulseOnline ? 'var(--success)' : 'var(--warning)', boxShadow: pulseOnline ? '0 0 8px var(--success)' : '0 0 8px var(--warning)' }}></span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -686,7 +686,7 @@ export default function App() {
                   </span>
                 </div>
                 {pulseOnline && (
-                  <a href={pulseUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
+                  <a href={pulseUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--accent-text)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
                     Open in New Tab
                     <svg fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ width: 12, height: 12 }}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
                   </a>
@@ -775,7 +775,7 @@ function AccountCard({ account }) {
 const sidebarStyles = {
   sidebar: {
     width: 260,
-    background: 'rgba(13, 18, 30, 0.95)',
+    background: 'var(--bg-surface)',
     borderRight: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',
@@ -799,15 +799,13 @@ const sidebarStyles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+    boxShadow: 'var(--shadow-accent)',
   },
   logoText: {
     fontSize: 20,
     fontWeight: 700,
     letterSpacing: '-0.5px',
-    background: 'linear-gradient(135deg, #fff, #9ca3af)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    color: 'var(--text-primary)',
   },
   navLinks: {
     listStyle: 'none',
@@ -831,7 +829,7 @@ const sidebarStyles = {
     transition: 'all 0.2s',
   },
   navItemActive: {
-    color: '#fff',
+    color: 'var(--accent-text)',
     border: '1px solid var(--border)',
     background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.02) 100%)',
     boxShadow: 'inset 0 0 12px rgba(255, 255, 255, 0.02)',

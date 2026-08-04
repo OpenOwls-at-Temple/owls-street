@@ -258,7 +258,7 @@ export default function Watchlist({ selectedSymbol, onSelectSymbol, collapsed, o
                 borderRadius: 8,
                 border: `1px solid ${selectedSymbol === sym ? 'var(--accent)' : 'var(--border)'}`,
                 background: selectedSymbol === sym ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.05))' : 'var(--bg-input)',
-                color: selectedSymbol === sym ? '#fff' : 'var(--text-secondary)',
+                color: selectedSymbol === sym ? 'var(--accent-text)' : 'var(--text-secondary)',
                 fontSize: 10,
                 fontWeight: 700,
                 cursor: 'pointer',

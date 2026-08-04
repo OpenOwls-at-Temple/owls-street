@@ -4,7 +4,7 @@ const s = {
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '16px 32px',
-    background: 'rgba(17, 24, 39, 0.3)',
+    background: 'var(--bg-muted)',
     borderBottom: '1px solid var(--border)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
@@ -12,7 +12,7 @@ const s = {
   logoContainer: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   badge: {
     fontSize: 11, padding: '2px 8px', borderRadius: 6,
-    background: 'var(--bg-elevated)', color: 'var(--accent)', border: '1px solid rgba(99, 102, 241, 0.2)',
+    background: 'var(--bg-elevated)', color: 'var(--accent-text)', border: '1px solid var(--accent-soft)',
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
